@@ -72,13 +72,13 @@ case class Success[A](a: A) extends Validation[Nothing, A]
 
 object Applicative {
 
-  val streamApplicative = new Applicative[Stream] {
+  val streamApplicative = new Applicative[LazyList] {
 
-    def unit[A](a: => A): Stream[A] =
-      Stream.continually(a) // The infinite, constant stream
+    def unit[A](a: => A): LazyList[A] =
+      LazyList.continually(a) // The infinite, constant stream
 
-    override def map2[A,B,C](a: Stream[A], b: Stream[B])( // Combine elements pointwise
-                    f: (A,B) => C): Stream[C] =
+    override def map2[A,B,C](a: LazyList[A], b: LazyList[B])( // Combine elements pointwise
+                    f: (A,B) => C): LazyList[C] =
       a zip b map f.tupled
   }
 
@@ -86,7 +86,7 @@ object Applicative {
 
   type Const[A, B] = A
 
-  implicit def monoidApplicative[M](M: Monoid[M]) =
+  implicit def monoidApplicative[M](M: Monoid[M]): Applicative[({ type f[x] = Const[M, x] })#f] =
     new Applicative[({ type f[x] = Const[M, x] })#f] {
       def unit[A](a: => A): M = M.zero
       override def apply[A,B](m1: M)(m2: M): M = M.op(m1, m2)

@@ -1,5 +1,7 @@
 package fpinscala.iomonad
 
+import language.implicitConversions
+
 /**
  * A version of `TailRec` implemented using exceptions.
  * In the implementation of `flatMap`, rather than calling
@@ -37,9 +39,9 @@ object Throw extends Monad[Throw] {
     var fi: Any => Any = f.asInstanceOf[Any => Any]
     while (true) {
       try return fi(ai).asInstanceOf[B]
-      catch { case Call(a2,f2) => ai = a2; fi = f2; }
+      catch { case Call(a2, f2) => ai = a2; fi = f2.asInstanceOf[Any => Any] } // TODO
     }
-    return null.asInstanceOf[B] // unreachable
+    null.asInstanceOf[B] // unreachable
   }
 
   /* Convenience function for forcing a thunk. */

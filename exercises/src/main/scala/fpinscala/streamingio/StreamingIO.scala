@@ -1,6 +1,7 @@
 package fpinscala.streamingio
 
-import fpinscala.iomonad.{IO,Monad,Free,unsafePerformIO}
+import fpinscala.iomonad.{Free, IO, Monad, Monadic, unsafePerformIO}
+
 import language.implicitConversions
 import language.higherKinds
 import language.postfixOps
@@ -56,7 +57,7 @@ object ImperativeAndLazyIO {
                              */
 
   object Examples {
-    val lines: Stream[String] = sys.error("defined elsewhere")
+    val lines: LazyList[String] = sys.error("defined elsewhere")
     val ex1 = lines.zipWithIndex.exists(_._2 + 1 >= 40000)
     val ex2 = lines.filter(!_.trim.isEmpty).zipWithIndex.exists(_._2 + 1 >= 40000)
     val ex3 = lines.take(40000).map(_.head).indexOfSlice("abracadabra".toList)
@@ -65,20 +66,20 @@ object ImperativeAndLazyIO {
                             /*
 
   Could we actually write the above? Not quite. We could 'cheat' and
-  return an `IO[Stream[String]]` representing the lines of a file:
+  return an `IO[LazyList[String]]` representing the lines of a file:
 
                              */
 
-  def lines(filename: String): IO[Stream[String]] = IO {
+  def lines(filename: String): IO[LazyList[String]] = IO {
     val src = io.Source.fromFile(filename)
-    src.getLines.toStream append { src.close; Stream.empty }
+    src.getLines.to(LazyList) :++ { src.close; LazyList.empty }
   }
                             /*
 
   This is called _lazy I/O_, and it's problematic for a number of
   reasons, discussed in the book text. However, it would be nice to
   recover the same high-level, compositional style we are used to
-  from our use of `List` and `Stream`.
+  from our use of `List` and `LazyList`.
 
                              */
 }
@@ -98,14 +99,14 @@ object SimpleStreamTransducers {
     import Process._
 
     /*
-     * A `Process[I,O]` can be used to transform a `Stream[I]` to a
-     * `Stream[O]`.
+     * A `Process[I,O]` can be used to transform a `LazyList[I]` to a
+     * `LazyList[O]`.
      */
-    def apply(s: Stream[I]): Stream[O] = this match {
-      case Halt() => Stream()
+    def apply(s: LazyList[I]): LazyList[O] = this match {
+      case Halt() => LazyList()
       case Await(recv) => s match {
         case h #:: t => recv(Some(h))(t)
-        case xs => recv(None)(xs) // Stream is empty
+        case xs => recv(None)(xs) // LazyList is empty
       }
       case Emit(h,t) => h #:: t(s)
     }
@@ -242,7 +243,7 @@ object SimpleStreamTransducers {
       }
 
     // enable monadic syntax for `Process` type
-    implicit def toMonadic[I,O](a: Process[I,O]) = monad[I].toMonadic(a)
+    implicit def toMonadic[I,O](a: Process[I,O]): Monadic[({type f[a] = Process[I, a]})#f, O] = monad[I].toMonadic(a)
 
     /**
      * A helper function to await an element or fall back to another process
@@ -521,9 +522,11 @@ object GeneralizedStreamTransducers {
       p2 match {
         case Halt(e) => this.kill onHalt { e2 => Halt(e) ++ Halt(e2) }
         case Emit(h, t) => Emit(h, this |> t)
-        case Await(req,recv) => this match {
+        case Await(req, recv) => this match {
           case Halt(err) => Halt(err) |> recv(Left(err))
-          case Emit(h,t) => t |> Try(recv(Right(h)))
+          case Emit(h, t) =>
+            val f = recv.asInstanceOf[Either[Throwable, Any] => Process1[O, O2]] // FIXME: 2019/09/04
+            t |> Try(f(Right(h)))
           case Await(req0,recv0) => await(req0)(recv0 andThen (_ |> p2))
         }
       }
@@ -576,13 +579,17 @@ object GeneralizedStreamTransducers {
         case Await(side, recv) => side.get match {
           case Left(isO) => this match {
             case Halt(e) => p2.kill onComplete Halt(e)
-            case Emit(o,ot) => (ot tee p2)(Try(recv(Right(o))))
+            case Emit(o,ot) =>
+              val f = recv.asInstanceOf[Either[Throwable, Any] => Tee[O, O2, O3]] // FIXME: 2019/09/04
+              (ot tee p2)(Try(f(Right(o))))
             case Await(reqL, recvL) =>
               await(reqL)(recvL andThen (this2 => this2.tee(p2)(t)))
           }
           case Right(isO2) => p2 match {
             case Halt(e) => this.kill onComplete Halt(e)
-            case Emit(o2,ot) => (this tee ot)(Try(recv(Right(o2))))
+            case Emit(o2,ot) =>
+              val f = recv.asInstanceOf[Either[Throwable, Any] => Tee[O, O2, O3]] // FIXME: 2019/09/04
+              (this tee ot)(Try(f(Right(o2))))
             case Await(reqR, recvR) =>
               await(reqR)(recvR andThen (p3 => this.tee(p3)(t)))
           }

@@ -3,6 +3,7 @@ package parsing
 
 import SliceableTypes._
 import scala.util.matching.Regex
+import language.implicitConversions
 
 /*
 This implementation is a bit trickier than the one in `Reference.scala`.

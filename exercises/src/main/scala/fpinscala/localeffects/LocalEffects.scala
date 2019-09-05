@@ -1,6 +1,7 @@
 package fpinscala.localeffects
 
 import fpinscala.monads._
+import scala.reflect.ClassTag
 
 object Mutable {
   def quicksort(xs: List[Int]): List[Int] = if (xs.isEmpty) xs else {
@@ -80,7 +81,7 @@ trait RunnableST[A] {
 }
 
 // Scala requires an implicit Manifest for constructing arrays.
-sealed abstract class STArray[S,A](implicit manifest: Manifest[A]) {
+sealed abstract class STArray[S, A](implicit manifest: ClassTag[A]) {
   protected def value: Array[A]
   def size: ST[S,Int] = ST(value.size)
 
@@ -115,7 +116,7 @@ object STArray {
       lazy val value = Array.fill(sz)(v)
     })
 
-  def fromList[S,A:Manifest](xs: List[A]): ST[S, STArray[S,A]] =
+  def fromList[S, A: ClassTag](xs: List[A]): ST[S, STArray[S,A]] =
     ST(new STArray[S,A] {
       lazy val value = xs.toArray
     })

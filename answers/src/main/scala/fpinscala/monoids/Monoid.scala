@@ -3,6 +3,7 @@ package fpinscala.monoids
 import fpinscala.parallelism.Nonblocking._
 import fpinscala.parallelism.Nonblocking.Par.toParOps // infix syntax for `Par.map`, `Par.flatMap`, etc
 import language.higherKinds
+import language.implicitConversions
 
 trait Monoid[A] {
   def op(a1: A, a2: A): A

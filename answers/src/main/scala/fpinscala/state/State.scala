@@ -215,9 +215,11 @@ object State {
   def set[S](s: S): State[S, Unit] = State(_ => ((), s))
 }
 
-sealed trait Input
-case object Coin extends Input
-case object Turn extends Input
+enum Input {
+  case Coin
+  case Turn
+}
+import Input._
 
 case class Machine(locked: Boolean, candies: Int, coins: Int)
 

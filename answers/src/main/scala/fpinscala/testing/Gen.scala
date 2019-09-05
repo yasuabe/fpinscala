@@ -9,6 +9,7 @@ import Prop._
 import java.util.concurrent.{Executors,ExecutorService}
 import language.postfixOps
 import language.implicitConversions
+import Result._
 
 case class Prop(run: (MaxSize,TestCases,RNG) => Result) {
   def &&(p: Prop) = Prop {
@@ -43,20 +44,12 @@ object Prop {
   type MaxSize = Int
   type FailedCase = String
 
-  sealed trait Result {
-    def isFalsified: Boolean
+  enum Result(val isFalsified: Boolean) {
+    case Passed extends Result(false)
+    case Falsified(failure: FailedCase, successes: SuccessCount) extends Result(true)
+    case Proved extends Result(false)
   }
-  case object Passed extends Result {
-    def isFalsified = false
-  }
-  case class Falsified(failure: FailedCase,
-                       successes: SuccessCount) extends Result {
-    def isFalsified = true
-  }
-  case object Proved extends Result {
-    def isFalsified = false
-  }
-
+  import Result._
 
   /* Produce an infinite random stream from a `Gen` and a starting `RNG`. */
   def randomStream[A](g: Gen[A])(rng: RNG): Stream[A] =

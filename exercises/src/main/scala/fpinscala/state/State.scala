@@ -58,9 +58,11 @@ case class State[S,+A](run: S => (A, S)) {
     sys.error("todo")
 }
 
-sealed trait Input
-case object Coin extends Input
-case object Turn extends Input
+enum Input {
+  case Coin
+  case Turn
+}
+import Input._
 
 case class Machine(locked: Boolean, candies: Int, coins: Int)
 

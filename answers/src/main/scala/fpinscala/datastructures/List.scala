@@ -1,12 +1,14 @@
 package fpinscala.datastructures
 
-sealed trait List[+A] // `List` data type, parameterized on a type, `A`
-case object Nil extends List[Nothing] // A `List` data constructor representing the empty list
+import scala.{ List => _ }
+
+enum List[+A] { // `List` data type, parameterized on a type, `A`
+  case Nil // A `List` data constructor representing the empty list
 /* Another data constructor, representing nonempty lists. Note that `tail` is another `List[A]`,
 which may be `Nil` or another `Cons`.
  */
-case class Cons[+A](head: A, tail: List[A]) extends List[A]
-
+  case Cons(head: A, tail: List[A])
+}
 object List { // `List` companion object. Contains functions for creating and working with lists.
   def sum(ints: List[Int]): Int = ints match { // A function that uses pattern matching to add up a list of integers
     case Nil => 0 // The sum of the empty list is 0.
@@ -114,18 +116,18 @@ object List { // `List` companion object. Contains functions for creating and wo
   */
   def init[A](l: List[A]): List[A] =
     l match {
-      case Nil => sys.error("init of empty list")
-      case Cons(_,Nil) => Nil
-      case Cons(h,t) => Cons(h,init(t))
+      case Nil          => sys.error("init of empty list")
+      case Cons(_, Nil) => Nil
+      case Cons(h, t)   => Cons(h, init(t))
     }
   def init2[A](l: List[A]): List[A] = {
     import collection.mutable.ListBuffer
     val buf = new ListBuffer[A]
     @annotation.tailrec
     def go(cur: List[A]): List[A] = cur match {
-      case Nil => sys.error("init of empty list")
-      case Cons(_,Nil) => List(buf.toList: _*)
-      case Cons(h,t) => buf += h; go(t)
+      case Nil          => sys.error("init of empty list")
+      case Cons(_, Nil) => List(buf.toList: _*)
+      case Cons(h, t)   => buf += h; go(t)
     }
     go(l)
   }
@@ -313,7 +315,7 @@ object List { // `List` companion object. Contains functions for creating and wo
 
   */
   @annotation.tailrec
-  def startsWith[A](l: List[A], prefix: List[A]): Boolean = (l,prefix) match {
+  def startsWith[A](l: List[A], prefix: List[A]): Boolean = (l, prefix) match {
     case (_,Nil) => true
     case (Cons(h,t),Cons(h2,t2)) if h == h2 => startsWith(t, t2)
     case _ => false

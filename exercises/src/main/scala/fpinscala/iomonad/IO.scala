@@ -318,15 +318,17 @@ object IO2c {
    * We'll call this new type `Async`.
    */
 
-  sealed trait Async[A] { // will rename this type to `Async`
+  enum Async[A] { // will rename this type to `Async`
     def flatMap[B](f: A => Async[B]): Async[B] =
       FlatMap(this, f)
     def map[B](f: A => B): Async[B] =
       flatMap(f andThen (Return(_)))
+
+    case Return(a: A)
+    case Suspend(resume: Par[A])
+    case FlatMap[A, B](sub: Async[A], k: A => Async[B]) extends Async[B]
   }
-  case class Return[A](a: A) extends Async[A]
-  case class Suspend[A](resume: Par[A]) extends Async[A] // notice this is a `Par`
-  case class FlatMap[A,B](sub: Async[A], k: A => Async[B]) extends Async[B]
+  import Async._
 
   object Async extends Monad[Async] {
     def unit[A](a: => A): Async[A] = Return(a)
@@ -360,17 +362,17 @@ object IO3 {
   We can generalize `TailRec` and `Async` to the type `Free`, which is
   a `Monad` for any choice of `F`.
   */
-
-  sealed trait Free[F[_],A] {
+  enum Free[F[_],A] {
     def flatMap[B](f: A => Free[F,B]): Free[F,B] =
       FlatMap(this, f)
     def map[B](f: A => B): Free[F,B] =
       flatMap(f andThen (Return(_)))
+
+    case Return(a: A)
+    case Suspend(s: F[A])
+    case FlatMap[F[_], A, B](s: Free[F, A], f: A => Free[F, B]) extends Free[F, B]
   }
-  case class Return[F[_],A](a: A) extends Free[F, A]
-  case class Suspend[F[_],A](s: F[A]) extends Free[F, A]
-  case class FlatMap[F[_],A,B](s: Free[F, A],
-                               f: A => Free[F, B]) extends Free[F, B]
+  import Free._
 
   // Exercise 1: Implement the free monad
   def freeMonad[F[_]]: Monad[({type f[a] = Free[F,a]})#f] = ???

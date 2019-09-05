@@ -3,7 +3,7 @@ package fpinscala.errorhandling
 
 import scala.{Option => _, Some => _, Either => _, _} // hide std library `Option`, `Some` and `Either`, since we are writing our own in this chapter
 
-sealed trait Option[+A] {
+enum Option[+A] {
   def map[B](f: A => B): Option[B] = sys.error("todo")
 
   def getOrElse[B>:A](default: => B): B = sys.error("todo")
@@ -13,9 +13,10 @@ sealed trait Option[+A] {
   def orElse[B>:A](ob: => Option[B]): Option[B] = sys.error("todo")
 
   def filter(f: A => Boolean): Option[A] = sys.error("todo")
+
+  case Some(get: A)
+  case None
 }
-case class Some[+A](get: A) extends Option[A]
-case object None extends Option[Nothing]
 
 object Option {
   def failingFn(i: Int): Int = {

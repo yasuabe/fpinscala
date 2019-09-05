@@ -1,7 +1,7 @@
 package fpinscala.laziness
 
 import Stream._
-trait Stream[+A] {
+enum Stream[+A] {
 
   def foldRight[B](z: => B)(f: (A, => B) => B): B = // The arrow `=>` in front of the argument type `B` means that the function `f` takes its second argument by name and may choose not to evaluate it.
     this match {
@@ -31,9 +31,10 @@ trait Stream[+A] {
   // writing your own function signatures.
 
   def startsWith[B](s: Stream[B]): Boolean = sys.error("todo")
+
+  case Empty
+  case Cons(h: () => A, t: () => Stream[A])
 }
-case object Empty extends Stream[Nothing]
-case class Cons[+A](h: () => A, t: () => Stream[A]) extends Stream[A]
 
 object Stream {
   def cons[A](hd: => A, tl: => Stream[A]): Stream[A] = {

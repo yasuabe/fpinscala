@@ -150,9 +150,11 @@ object Monoid {
       foldMapV(bs, par(m))(b => Par.lazyUnit(b))
     }
 
-  sealed trait WC
-  case class Stub(chars: String) extends WC
-  case class Part(lStub: String, words: Int, rStub: String) extends WC
+  enum WC {
+    case Stub(chars: String)
+    case Part(lStub: String, words: Int, rStub: String)
+  }
+  import WC._
 
   val wcMonoid: Monoid[WC] = new Monoid[WC] {
     // The empty result, where we haven't seen any characters yet.
@@ -258,9 +260,11 @@ object StreamFoldable extends Foldable[Stream] {
     as.foldLeft(z)(f)
 }
 
-sealed trait Tree[+A]
-case class Leaf[A](value: A) extends Tree[A]
-case class Branch[A](left: Tree[A], right: Tree[A]) extends Tree[A]
+enum Tree[+A] {
+  case Leaf(value: A)
+  case Branch(left: Tree[A], right: Tree[A])
+}
+import Tree._
 
 object TreeFoldable extends Foldable[Tree] {
   override def foldMap[A, B](as: Tree[A])(f: A => B)(mb: Monoid[B]): B = as match {

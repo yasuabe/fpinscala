@@ -95,7 +95,7 @@ object SimpleStreamTransducers {
 
                              */
 
-  sealed trait Process[I,O] {
+  enum Process[I,O] {
     import Process._
 
     /*
@@ -212,20 +212,13 @@ object SimpleStreamTransducers {
       }
       case _ => this
     }
+
+    case Emit( head: O, tail: Process[I,O] = Halt())
+    case Await( recv: Option[I] => Process[I,O]) 
+    case Halt()
   }
 
   object Process {
-
-    case class Emit[I,O](
-        head: O,
-        tail: Process[I,O] = Halt[I,O]())
-      extends Process[I,O]
-
-    case class Await[I,O](
-        recv: Option[I] => Process[I,O])
-      extends Process[I,O]
-
-    case class Halt[I,O]() extends Process[I,O]
 
     def emit[I,O](head: O,
                   tail: Process[I,O] = Halt[I,O]()): Process[I,O] =

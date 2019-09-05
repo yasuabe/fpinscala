@@ -10,7 +10,7 @@ This source file contains the answers to the last two exercises in the section
 The Gen data type in this file incorporates exhaustive checking of finite domains.
 */
 
-import fpinscala.laziness.{Stream,Cons,Empty}
+import fpinscala.laziness.Stream
 import fpinscala.state._
 import fpinscala.parallelism._
 import fpinscala.parallelism.Par.Par
@@ -18,7 +18,7 @@ import Gen._
 import Prop._
 import Status._
 import java.util.concurrent.{Executors,ExecutorService}
-
+import Stream._
 
 case class Prop(run: (MaxSize,TestCases,RNG) => Result) {
   def &&(p: Prop) = Prop {
@@ -168,12 +168,10 @@ object Prop {
   val forkProp = Prop.forAllPar(pint2)(i => equal(Par.fork(i), i)) tag "fork"
 }
 
-sealed trait Status {}
-
-object Status {
-  case object Exhausted extends Status
-  case object Proven extends Status
-  case object Unfalsified extends Status
+enum Status {
+  case Exhausted
+  case Proven
+  case Unfalsified
 }
 
 /*

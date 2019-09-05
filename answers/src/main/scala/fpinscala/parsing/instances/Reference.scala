@@ -22,7 +22,7 @@ object ReferenceTypes {
   }
 
   /* Likewise, we define a few helper functions on `Result`. */
-  sealed trait Result[+A] {
+  enum Result[+A] {
     def extract: Either[ParseError,A] = this match {
       case Failure(e,_) => Left(e)
       case Success(a,_) => Right(a)
@@ -46,9 +46,9 @@ object ReferenceTypes {
       case Success(a,m) => Success(a,n+m)
       case _ => this
     }
+    case Success(get: A, length: Int)
+    case Failure(get: ParseError, isCommitted: Boolean) extends Result[A]
   }
-  case class Success[+A](get: A, length: Int) extends Result[A]
-  case class Failure(get: ParseError, isCommitted: Boolean) extends Result[Nothing]
 
   /** Returns -1 if s1.startsWith(s2), otherwise returns the
     * first index where the two strings differed. If s2 is
@@ -65,6 +65,7 @@ object ReferenceTypes {
 }
 
 object Reference extends Parsers[Parser] {
+  import ReferenceTypes.Result._
 
   def run[A](p: Parser[A])(s: String): Either[ParseError,A] = {
     val s0 = ParseState(Location(s))
@@ -85,7 +86,7 @@ object Reference extends Parsers[Parser] {
       case Success(a,n) => g(a)(s.advanceBy(n))
                            .addCommit(n != 0)
                            .advanceSuccess(n)
-      case f@Failure(_,_) => f
+      case f@Failure(_,_) => f.asInstanceOf[Result[B]]
     }
 
   def string(w: String): Parser[String] = {
@@ -124,7 +125,7 @@ object Reference extends Parsers[Parser] {
   def slice[A](p: Parser[A]): Parser[String] =
     s => p(s) match {
       case Success(_,n) => Success(s.slice(n),n)
-      case f@Failure(_,_) => f
+      case f@Failure(a, b) => f.asInstanceOf[Result[String]]
     }
 
   /* We provide an overridden version of `many` that accumulates
@@ -138,7 +139,7 @@ object Reference extends Parsers[Parser] {
       def go(p: Parser[A], offset: Int): Result[List[A]] = {
         p(s.advanceBy(offset)) match {
           case Success(a,n) => buf += a; go(p, offset+n)
-          case f@Failure(e,true) => f
+          case f@Failure(e,true) => f.asInstanceOf[Result[List[A]]]
           case Failure(e,_) => Success(buf.toList,offset)
         }
       }

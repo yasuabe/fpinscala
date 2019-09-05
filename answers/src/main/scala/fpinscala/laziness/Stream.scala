@@ -1,7 +1,7 @@
 package fpinscala.laziness
 
 import Stream._
-trait Stream[+A] {
+enum Stream[+A] {
 
   // The natural recursive solution
   def toListRecursive: List[A] = this match {
@@ -190,9 +190,9 @@ trait Stream[+A] {
     case Empty => None
     case Cons(h, t) => if (f(h())) Some(h()) else t().find(f)
   }
+  case Empty
+  case Cons(h: () => A, t: () => Stream[A])
 }
-case object Empty extends Stream[Nothing]
-case class Cons[+A](h: () => A, t: () => Stream[A]) extends Stream[A]
 
 object Stream {
   def cons[A](hd: => A, tl: => Stream[A]): Stream[A] = {

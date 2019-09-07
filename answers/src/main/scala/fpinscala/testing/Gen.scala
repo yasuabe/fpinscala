@@ -236,7 +236,7 @@ object Gen {
 
   val string: SGen[String] = SGen(stringN)
 
-  implicit def unsized[A](g: Gen[A]): SGen[A] = SGen(_ => g)
+  given unsized[A] as Conversion[Gen[A], SGen[A]] = g => SGen(_ => g)
 
   val smallInt = Gen.choose(-10,10)
   val maxProp = forAll(listOf(smallInt)) { l =>

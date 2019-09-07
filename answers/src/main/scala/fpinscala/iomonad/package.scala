@@ -3,13 +3,14 @@ package fpinscala
 import language.higherKinds
 
 package object iomonad {
+  import java.util.concurrent.ExecutorService
   import fpinscala.parallelism.Nonblocking._
   import IO3.Free._
 
   type IO[A] = IO3.IO[A]
   def IO[A](a: => A): IO[A] = IO3.IO[A](a)
 
-  implicit val ioMonad: Monad[({type f[a]=IO3.Free[Par, a]})#f] = IO3.freeMonad[Par]
+  given ioMonad as Monad[({type f[a]=IO3.Free[Par, a]})#f] = IO3.freeMonad[Par]
 
   def now[A](a: A): IO[A] = Return(a)
 
@@ -32,7 +33,6 @@ package object iomonad {
   // The name we have chosen for this method, `unsafePerformIO`,
   // reflects that is is unsafe, i.e. that it has side effects,
   // and that it _performs_ the actual I/O.
-  import java.util.concurrent.ExecutorService
-  def unsafePerformIO[A](io: IO[A])(implicit E: ExecutorService): A =
-    Par.run(E) { IO3.run(io)(IO3.parMonad) }
+  def unsafePerformIO[A](io: IO[A]) given (E: ExecutorService): A =
+    Par.run { IO3.run(io) given IO3.parMonad }
 }

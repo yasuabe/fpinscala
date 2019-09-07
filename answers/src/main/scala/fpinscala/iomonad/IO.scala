@@ -402,7 +402,7 @@ object IO3 {
   }
 
   // Exercise 3: Implement a `Free` interpreter which works for any `Monad`
-  def run[F[_],A](a: Free[F,A])(implicit F: Monad[F]): F[A] = step(a) match {
+  def run[F[_],A](a: Free[F,A]) given (F: Monad[F]): F[A] = step(a) match {
     case Return(a) => F.unit(a)
     case Suspend(r) => r
     case FlatMap(Suspend(r), f) => F.flatMap(r)(a => run(f(a)))
@@ -482,19 +482,18 @@ object IO3 {
 
   type ~>[F[_], G[_]] = Translate[F,G] // gives us infix syntax `F ~> G` for `Translate[F,G]`
 
-  implicit val function0Monad: Monad[Function0] = new Monad[Function0] {
+  given as Monad[Function0] {
     def unit[A](a: => A) = () => a
     def flatMap[A,B](a: Function0[A])(f: A => Function0[B]) =
       () => f(a())()
   }
 
-  implicit val parMonad: Monad[Par] = new Monad[Par] {
+  given parMonad as Monad[Par] {
     def unit[A](a: => A) = Par.unit(a)
     def flatMap[A,B](a: Par[A])(f: A => Par[B]) = Par.fork { Par.flatMap(a)(f) }
   }
 
-  def runFree[F[_],G[_],A](free: Free[F,A])(t: F ~> G)(
-                           implicit G: Monad[G]): G[A] =
+  def runFree[F[_],G[_],A](free: Free[F,A])(t: F ~> G) given (G: Monad[G]): G[A] =
     step(free) match {
       case Return(a) => G.unit(a)
       case Suspend(r) => t(r)
@@ -527,7 +526,7 @@ object IO3 {
     val t = new (F ~> FreeG) {
       def apply[A](a: F[A]): Free[G,A] = Suspend { fg(a) }
     }
-    runFree(f)(t)(freeMonad[G])
+    runFree(f)(t) given freeMonad[G]
   }
 
   def runConsole[A](a: Free[Console,A]): A =
@@ -559,7 +558,7 @@ object IO3 {
       }
   }
   object ConsoleState {
-    implicit val monad: Monad[ConsoleState] = new Monad[ConsoleState] {
+    given as Monad[ConsoleState] {
       def unit[A](a: => A) = ConsoleState(bufs => (a,bufs))
       def flatMap[A,B](ra: ConsoleState[A])(f: A => ConsoleState[B]) = ra flatMap f
     }
@@ -573,7 +572,7 @@ object IO3 {
       ConsoleReader(r => f(run(r)).run(r))
   }
   object ConsoleReader {
-    implicit val monad: Monad[ConsoleReader] = new Monad[ConsoleReader] {
+    given as Monad[ConsoleReader] {
       def unit[A](a: => A) = ConsoleReader(_ => a)
       def flatMap[A,B](ra: ConsoleReader[A])(f: A => ConsoleReader[B]) = ra flatMap f
     }

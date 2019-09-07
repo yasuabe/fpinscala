@@ -361,7 +361,7 @@ object Gen {
   case class Sized[+A](forSize: Int => Gen[A]) extends SGen[A]
   case class Unsized[+A](get: Gen[A]) extends SGen[A]
 
-  implicit def unsized[A](g: Gen[A]): SGen[A] = Unsized(g)
+  given unsized[A] as Conversion[Gen[A], SGen[A]] = Unsized(_)
 
   val smallInt = Gen.choose(-10,10)
   val maxProp = forAll(listOf(smallInt)) { l =>

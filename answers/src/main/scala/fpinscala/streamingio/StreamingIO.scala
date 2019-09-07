@@ -5,6 +5,7 @@ import fpinscala.iomonad.{Free, IO, Monad, Monadic, unsafePerformIO}
 import language.implicitConversions
 import language.higherKinds
 import language.postfixOps
+import java.util.concurrent.ExecutorService
 
 object ImperativeAndLazyIO {
 
@@ -250,7 +251,7 @@ object SimpleStreamTransducers {
       }
 
     // enable monadic syntax for `Process` type
-    implicit def toMonadic[I,O](a: Process[I,O]): Monadic[({type f[x]=Process[I, x]})#f, O] = monad[I].toMonadic(a)
+    given toMonadic[I,O] as Conversion[Process[I,O], Monadic[({type f[x]=Process[I, x]})#f, O]] = monad[I].toMonadic(_)
 
     /**
      * A helper function to await an element or fall back to another process
@@ -584,7 +585,7 @@ object GeneralizedStreamTransducers {
      * below, this is not tail recursive and responsibility for stack safety
      * is placed on the `Monad` instance.
      */
-    def runLog(implicit F: MonadCatch[F]): F[IndexedSeq[O]] = {
+    def runLog given(F: MonadCatch[F]): F[IndexedSeq[O]] = {
       def go(cur: Process[F,O], acc: IndexedSeq[O]): F[IndexedSeq[O]] =
         cur match {
           case Emit(h,t) => go(t, acc :+ h)
@@ -767,7 +768,7 @@ object GeneralizedStreamTransducers {
      * exception.
      */
     def runLog[O](src: Process[IO,O]): IO[IndexedSeq[O]] = IO {
-      val E = java.util.concurrent.Executors.newFixedThreadPool(4)
+      given E as ExecutorService = java.util.concurrent.Executors.newFixedThreadPool(4)
       @annotation.tailrec
       def go(cur: Process[IO,O], acc: IndexedSeq[O]): IndexedSeq[O] =
         cur match {
@@ -776,7 +777,7 @@ object GeneralizedStreamTransducers {
           case Halt(err) => throw err
           case Await(req,recv) =>
             val next =
-              try recv(Right(fpinscala.iomonad.unsafePerformIO(req)(E)))
+              try recv(Right(fpinscala.iomonad.unsafePerformIO(req)))
               catch { case err: Throwable => recv(Left(err)) }
             go(next, acc)
         }

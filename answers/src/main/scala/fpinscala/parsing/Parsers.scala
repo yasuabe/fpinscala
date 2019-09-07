@@ -10,10 +10,9 @@ import language.implicitConversions
 trait Parsers[Parser[+_]] { self => // so inner classes may call methods of trait
   def run[A](p: Parser[A])(input: String): Either[ParseError,A]
 
-  implicit def string(s: String): Parser[String]
-  implicit def operators[A](p: Parser[A]): ParserOps[A] = ParserOps[A](p)
-  implicit def asStringParser[A](a: A)(implicit f: A => Parser[String]):
-    ParserOps[String] = ParserOps(f(a))
+  def string(s: String): Parser[String]
+  given operators[A] as Conversion[Parser[A], ParserOps[A]] = ParserOps[A](_)
+  given asStringParser[A] as Conversion[A, ParserOps[String]] given (f: A => Parser[String]) = a => ParserOps(f(a))
 
   def char(c: Char): Parser[Char] =
     string(c.toString) map (_.charAt(0))
@@ -46,7 +45,8 @@ trait Parsers[Parser[+_]] { self => // so inner classes may call methods of trai
 
   def flatMap[A,B](p: Parser[A])(f: A => Parser[B]): Parser[B]
 
-  implicit def regex(r: Regex): Parser[String]
+  def regex(r: Regex): Parser[String] // TODO: find better implementation
+  given as Conversion[Regex, Parser[String]] = regex
 
   /*
   These can be implemented using a for-comprehension, which delegates to the `flatMap` and `map` implementations we've provided on `ParserOps`, or they can be implemented in terms of these functions directly.

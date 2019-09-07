@@ -82,7 +82,7 @@ trait RunnableST[A] {
 }
 
 // Scala requires an implicit Manifest for constructing arrays.
-sealed abstract class STArray[S,A](implicit manifest: ClassTag[A]) {
+sealed abstract class STArray[S,A] given (manifest: ClassTag[A]) {
   protected def value: Array[A]
   def size: ST[S,Int] = ST(value.size)
 

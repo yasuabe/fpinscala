@@ -135,7 +135,7 @@ object Reference extends Parsers[Parser] {
   override def many[A](p: Parser[A]): Parser[List[A]] =
     s => {
       var nConsumed: Int = 0
-      val buf = new collection.mutable.ListBuffer[A]
+      val buf = collection.mutable.ListBuffer[A]()
       def go(p: Parser[A], offset: Int): Result[List[A]] = {
         p(s.advanceBy(offset)) match {
           case Success(a,n) => buf += a; go(p, offset+n)

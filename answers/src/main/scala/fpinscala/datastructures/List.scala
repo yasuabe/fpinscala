@@ -122,7 +122,7 @@ object List { // `List` companion object. Contains functions for creating and wo
     }
   def init2[A](l: List[A]): List[A] = {
     import collection.mutable.ListBuffer
-    val buf = new ListBuffer[A]
+    val buf = ListBuffer[A]()
     @annotation.tailrec
     def go(cur: List[A]): List[A] = cur match {
       case Nil          => sys.error("init of empty list")
@@ -232,7 +232,7 @@ object List { // `List` companion object. Contains functions for creating and wo
     foldRightViaFoldLeft(l, Nil:List[B])((h,t) => Cons(f(h),t))
 
   def map_2[A,B](l: List[A])(f: A => B): List[B] = {
-    val buf = new collection.mutable.ListBuffer[B]
+    val buf = collection.mutable.ListBuffer[B]()
     def go(l: List[A]): Unit = l match {
       case Nil => ()
       case Cons(h,t) => buf += f(h); go(t)
@@ -251,7 +251,7 @@ object List { // `List` companion object. Contains functions for creating and wo
     foldRightViaFoldLeft(l, Nil:List[A])((h,t) => if (f(h)) Cons(h,t) else t)
 
   def filter_2[A](l: List[A])(f: A => Boolean): List[A] = {
-    val buf = new collection.mutable.ListBuffer[A]
+    val buf = collection.mutable.ListBuffer[A]()
     def go(l: List[A]): Unit = l match {
       case Nil => ()
       case Cons(h,t) => if (f(h)) buf += h; go(t)

@@ -32,7 +32,7 @@ enum Stream[+A] {
   still _pure_.
   */
   def toListFast: List[A] = {
-    val buf = new collection.mutable.ListBuffer[A]
+    val buf = collection.mutable.ListBuffer[A]()
     @annotation.tailrec
     def go(s: Stream[A]): List[A] = s match {
       case Cons(h,t) =>

@@ -696,7 +696,7 @@ object GeneralizedStreamTransducers {
 
     import java.io.{BufferedReader,FileReader}
     val p: Process[IO, String] =
-      await(IO(new BufferedReader(new FileReader("lines.txt")))) {
+      await(IO(BufferedReader(FileReader("lines.txt")))) {
         case Right(b) =>
           lazy val next: Process[IO,String] = await(IO(b.readLine)) {
             case Left(e) => await(IO(b.close))(_ => Halt(e))
@@ -900,7 +900,7 @@ object GeneralizedStreamTransducers {
     /* A `Sink` which writes input strings to the given file. */
     def fileW(file: String, append: Boolean = false): Sink[IO,String] =
       resource[FileWriter, String => Process[IO,Unit]]
-        { IO { new FileWriter(file, append) }}
+        { IO { FileWriter(file, append) }}
         { w => constant { (s: String) => eval[IO,Unit](IO(w.write(s))) }}
         { w => eval_(IO(w.close)) }
 

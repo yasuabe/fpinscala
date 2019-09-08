@@ -36,16 +36,17 @@ import annotation.tailrec
  * @param strategy Execution strategy, for example, a strategy that is backed by an `ExecutorService`
  * @tparam A       The type of messages accepted by this actor.
  */
-final class Actor[A](strategy: Strategy)(handler: A => Unit, onError: Throwable => Unit = throw(_)) {
+final class Actor[A](strategy: Strategy)(handler: A => Unit, onError: Throwable => Unit) {
   self =>
 
-  private val tail = new AtomicReference(new Node[A]())
-  private val suspended = new AtomicInteger(1)
-  private val head = new AtomicReference(tail.get)
+  val n: Node[A] = Node[A]()
+  private val tail      = AtomicReference(n) // TODO: inline n: Node[A]
+  private val suspended = AtomicInteger(1)
+  private val head      = AtomicReference(tail.get)
 
   /** Alias for `apply` */
   def !(a: A) = {
-    val n = new Node(a)
+    val n = Node(a)
     head.getAndSet(n).lazySet(n)
     trySchedule()
   }
@@ -56,7 +57,7 @@ final class Actor[A](strategy: Strategy)(handler: A => Unit, onError: Throwable 
   }
 
   def contramap[B](f: B => A): Actor[B] =
-    new Actor[B](strategy)((b: B) => (this ! f(b)), onError)
+    Actor[B](strategy)((b: B) => (this ! f(b)), onError)
 
   private def trySchedule() = {
     if (suspended.compareAndSet(1, 0)) schedule()
@@ -91,16 +92,11 @@ final class Actor[A](strategy: Strategy)(handler: A => Unit, onError: Throwable 
       if (i > 0) batchHandle(n, i - 1) else n
     } else t
   }
+  def this(es: ExecutorService)(handler: A => Unit, onError: Throwable => Unit = throw(_)) =
+    this(Strategy.fromExecutorService(es))(handler, onError)
 }
 
 private class Node[A](var a: A = null.asInstanceOf[A]) extends AtomicReference[Node[A]]
-
-object Actor {
-
-  /** Create an `Actor` backed by the given `ExecutorService`. */
-  def apply[A](es: ExecutorService)(handler: A => Unit, onError: Throwable => Unit = throw(_)): Actor[A] =
-    new Actor(Strategy.fromExecutorService(es))(handler, onError)
-}
 
 /**
  * Provides a function for evaluating expressions, possibly asynchronously.

@@ -256,7 +256,7 @@ object Sliceable extends Parsers[Parser] {
         go(p.slice, 0).asInstanceOf[Result[List[A]]]
       }
       else {
-        val buf = new collection.mutable.ListBuffer[A]
+        val buf = collection.mutable.ListBuffer[A]()
         def go(p: Parser[A], offset: Int): Result[List[A]] = {
           p(s.advanceBy(offset)) match {
             case Success(a,n) => buf += a; go(p, offset+n)

@@ -15,8 +15,8 @@ object Nonblocking {
   object Par {
 
     def run[A](p: Par[A]) given (es: ExecutorService): A = {
-      val ref = new java.util.concurrent.atomic.AtomicReference[A] // A mutable, threadsafe reference, to use for storing the result
-      val latch = new CountDownLatch(1) // A latch which, when decremented, implies that `ref` has the result
+      val ref   = java.util.concurrent.atomic.AtomicReference[A] // A mutable, threadsafe reference, to use for storing the result
+      val latch = CountDownLatch(1) // A latch which, when decremented, implies that `ref` has the result
       p(es) { a => ref.set(a); latch.countDown } // Asynchronously set the result, and decrement the latch
       latch.await // Block until the `latch.countDown` is invoked asynchronously
       ref.get // Once we've passed the latch, we know `ref` has been set, and return its value
@@ -184,7 +184,7 @@ object Nonblocking {
       join(map(p)(f))
 
     /* Gives us infix syntax for `Par`. */
-    given toParOps[A] as Conversion[Par[A], ParOps[A]] = new ParOps(_)
+    given toParOps[A] as Conversion[Par[A], ParOps[A]] = ParOps(_)
 
     // infix versions of `map`, `map2` and `flatMap`
     class ParOps[A](p: Par[A]) {

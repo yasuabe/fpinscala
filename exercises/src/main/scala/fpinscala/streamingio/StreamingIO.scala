@@ -24,7 +24,7 @@ object ImperativeAndLazyIO {
     // There are a number of convenience functions in scala.io.Source
     // for reading from external sources such as files.
     val src = io.Source.fromFile(filename)
-    try {
+    try
       var count = 0
       // Obtain a stateful iterator from the Source
       val lines: Iterator[String] = src.getLines
@@ -33,7 +33,6 @@ object ImperativeAndLazyIO {
         count += 1
 
       count > 40000
-    }
     finally src.close
   }
 

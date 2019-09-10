@@ -53,9 +53,9 @@ object Prop {
         else s match
           case Cons(h,t) => h() match
             case Some(h) =>
-              try {
+              try
                 if (f(h)) go(i+1,j,t(),onEnd)
-                else Left(h.toString) }
+                else Left(h.toString)
               catch { case e: Exception => Left(buildMsg(h, e)) }
             case None => Right((Unfalsified,i))
           case _ => onEnd(i)

@@ -50,22 +50,22 @@ object Option {
   def failingFn(i: Int): Int = {
     // `val y: Int = ...` declares `y` as having type `Int`, and sets it equal to the right hand side of the `=`.
     val y: Int = throw Exception("fail!")
-    try {
+    try
       val x = 42 + 5
       x + y
-    }
     // A `catch` block is just a pattern matching block like the ones we've seen. `case e: Exception` is a pattern
     // that matches any `Exception`, and it binds this value to the identifier `e`. The match returns the value 43.
-    catch { case e: Exception => 43 }
+    catch
+      case e: Exception => 43
   }
 
   def failingFn2(i: Int): Int = {
-    try {
+    try
       val x = 42 + 5
       // A thrown Exception can be given any type; here we're annotating it with the type `Int`
       x + ((throw Exception("fail!")): Int)
-    }
-    catch { case e: Exception => 43 }
+    catch
+      case e: Exception => 43
   }
 
   def mean(xs: Seq[Double]): Option[Double] =

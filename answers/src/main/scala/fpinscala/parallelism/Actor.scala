@@ -70,11 +70,11 @@ final class Actor[A](strategy: Strategy)(handler: A => Unit, onError: Throwable 
   private def act() = {
     val t = tail.get
     val n = batchHandle(t, 1024)
-    if (n ne t) {
+    if n ne t then
       n.a = null.asInstanceOf[A]
       tail.lazySet(n)
       schedule()
-    } else
+    else
       suspended.set(1)
       if (n.get ne null) trySchedule()
   }
@@ -82,14 +82,14 @@ final class Actor[A](strategy: Strategy)(handler: A => Unit, onError: Throwable 
   @tailrec
   private def batchHandle(t: Node[A], i: Int): Node[A] = {
     val n = t.get
-    if (n ne null) {
-      try {
+    if n ne null then
+      try
         handler(n.a)
-      } catch {
+      catch
         case ex: Throwable => onError(ex)
-      }
-      if (i > 0) batchHandle(n, i - 1) else n
-    } else t
+
+      if i > 0 then batchHandle(n, i - 1) else n
+    else t
   }
   def this(es: ExecutorService)(handler: A => Unit, onError: Throwable => Unit = throw(_)) =
     this(Strategy.fromExecutorService(es))(handler, onError)

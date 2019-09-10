@@ -184,10 +184,8 @@ object Nonblocking {
       join(map(p)(f))
 
     /* Gives us infix syntax for `Par`. */
-    given toParOps[A] as Conversion[Par[A], ParOps[A]] = ParOps(_)
-
     // infix versions of `map`, `map2` and `flatMap`
-    class ParOps[A](p: Par[A]) {
+    given ParOps[A](p: Par[A]) {
       def map[B](f: A => B): Par[B] = Par.map(p)(f)
       def map2[B,C](b: Par[B])(f: (A,B) => C): Par[C] = Par.map2(p,b)(f)
       def flatMap[B](f: A => Par[B]): Par[B] = Par.flatMap(p)(f)

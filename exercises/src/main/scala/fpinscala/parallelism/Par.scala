@@ -46,11 +46,10 @@ object Par {
       else f(es)
 
   /* Gives us infix syntax for `Par`. */
-  given toParOps[A] as Conversion[Par[A], ParOps[A]] = ParOps(_)
-
-  class ParOps[A](p: Par[A]) {
-
-
+  given ParOps[A](p: Par[A]) {
+    def map[B](f: A => B): Par[B] = ???
+    def map2[B,C](b: Par[B])(f: (A,B) => C): Par[C] = ???
+    def zip[B](b: Par[B]): Par[(A,B)] = ???
   }
 }
 

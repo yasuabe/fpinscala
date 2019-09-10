@@ -73,10 +73,9 @@ final class Actor[A](strategy: Strategy)(handler: A => Unit, onError: Throwable 
       n.a = null.asInstanceOf[A]
       tail.lazySet(n)
       schedule()
-    } else {
+    } else
       suspended.set(1)
       if (n.get ne null) trySchedule()
-    }
   }
 
   @tailrec

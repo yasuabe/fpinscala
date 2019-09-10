@@ -96,13 +96,12 @@ object Applicative {
     new Applicative[({type f[x] = Validation[E,x]})#f] {
       def unit[A](a: => A) = Success(a)
       override def map2[A,B,C](fa: Validation[E,A], fb: Validation[E,B])(f: (A, B) => C) =
-        (fa, fb) match {
+        (fa, fb) match
           case (Success(a), Success(b)) => Success(f(a, b))
           case (Failure(h1, t1), Failure(h2, t2)) =>
             Failure(h1, t1 ++ Vector(h2) ++ t2)
           case (e@Failure(_, _), _) => e
           case (_, e@Failure(_, _)) => e
-        }
     }
 
   type Const[A, B] = A
@@ -139,10 +138,9 @@ object Monad {
   def eitherMonad[E]: Monad[({type f[x] = Either[E, x]})#f] =
     new Monad[({type f[x] = Either[E, x]})#f] {
       def unit[A](a: => A): Either[E, A] = Right(a)
-      override def flatMap[A,B](eea: Either[E, A])(f: A => Either[E, B]) = eea match {
+      override def flatMap[A,B](eea: Either[E, A])(f: A => Either[E, B]) = eea match
         case Right(a) => f(a)
         case Left(b) => Left(b)
-      }
     }
 
   def stateMonad[S] = new Monad[({type f[x] = State[S, x]})#f] {
@@ -186,23 +184,23 @@ trait Traverse[F[_]] extends Functor[F] with Foldable[F] { self =>
     traverse[({type f[x] = State[S, x]})#f, A, B](fa)(f)(Monad.stateMonad)
 
   def zipWithIndex_[A](ta: F[A]): F[(A,Int)] =
-    traverseS(ta)((a: A) => (for {
+    traverseS(ta)((a: A) => (for
       i <- get[Int]
       _ <- set(i + 1)
-    } yield (a, i))).run(0)._1
+    yield (a, i))).run(0)._1
 
   def toList_[A](fa: F[A]): List[A] =
-    traverseS(fa)((a: A) => (for {
+    traverseS(fa)((a: A) => (for
       as <- get[List[A]] // Get the current state, the accumulated list.
       _  <- set(a :: as) // Add the current element and set the new list as the new state.
-    } yield ())).run(Nil)._2.reverse
+    yield ())).run(Nil)._2.reverse
 
   def mapAccum[S,A,B](fa: F[A], s: S)(f: (A, S) => (B, S)): (F[B], S) =
-    traverseS(fa)((a: A) => (for {
+    traverseS(fa)((a: A) => (for
       s1 <- get[S]
       (b, s2) = f(a, s1)
       _  <- set(s2)
-    } yield b)).run(s)
+    yield b)).run(s)
 
   override def toList[A](fa: F[A]): List[A] =
     mapAccum(fa, List[A]())((a, s) => ((), a :: s))._2.reverse
@@ -255,10 +253,9 @@ object Traverse {
 
   val optionTraverse = new Traverse[Option] {
     override def traverse[M[_],A,B](oa: Option[A])(f: A => M[B]) given (M: Applicative[M]): M[Option[B]] =
-      oa match {
+      oa match
         case Some(a) => M.map(f(a))(Some(_))
         case None    => M.unit(None)
-      }
   }
 
   val treeTraverse = new Traverse[Tree] {

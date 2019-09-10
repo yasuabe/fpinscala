@@ -22,25 +22,22 @@ import Stream._
 
 case class Prop(run: (MaxSize,TestCases,RNG) => Result) {
   def &&(p: Prop) = Prop {
-    (max,n,rng) => run(max,n,rng) match {
+    (max,n,rng) => run(max,n,rng) match
       case Right((a,n)) => p.run(max,n,rng).map { case (s,m) => (s,n+m) }
       case l => l
-    }
   }
   def ||(p: Prop) = Prop {
-    (max,n,rng) => run(max,n,rng) match {
+    (max,n,rng) => run(max,n,rng) match
       case Left(msg) => p.tag(msg).run(max,n,rng)
       case r => r
-    }
   }
   /* This is rather simplistic - in the event of failure, we simply prepend
    * the given message on a newline in front of the existing message.
    */
   def tag(msg: String) = Prop {
-    (max,n,rng) => run(max,n,rng) match {
+    (max,n,rng) => run(max,n,rng) match
       case Left(e) => Left(msg + "\n" + e)
       case r => r
-    }
   }
 }
 
@@ -53,23 +50,20 @@ object Prop {
     (n,rng) => {
       def go(i: Int, j: Int, s: Stream[Option[A]], onEnd: Int => Result): Result =
         if (i == j) Right((Unfalsified, i))
-        else s match {
-          case Cons(h,t) => h() match {
+        else s match
+          case Cons(h,t) => h() match
             case Some(h) =>
               try {
                 if (f(h)) go(i+1,j,t(),onEnd)
                 else Left(h.toString) }
               catch { case e: Exception => Left(buildMsg(h, e)) }
             case None => Right((Unfalsified,i))
-          }
           case _ => onEnd(i)
-        }
-      go(0, n/3, a.exhaustive, i => Right((Proven, i))) match {
+      go(0, n/3, a.exhaustive, i => Right((Proven, i))) match
         case Right((Unfalsified,_)) =>
           val rands = randomStream(a)(rng).map(Some(_))
           go(n/3, n, rands, i => Right((Unfalsified, i)))
         case s => s // If proven or failed, stop immediately
-      }
     }
   }
 
@@ -84,10 +78,9 @@ object Prop {
   /* We pattern match on the `SGen`, and delegate to our `Gen` version of `forAll`
    * if `g` is unsized; otherwise, we call the sized version of `forAll` (below).
    */
-  def forAll[A](g: SGen[A])(f: A => Boolean): Prop = g match {
+  def forAll[A](g: SGen[A])(f: A => Boolean): Prop = g match
     case Unsized(g2) => forAll(g2)(f)
     case Sized(gs) => forAll(gs)(f)
-  }
 
   /* The sized case of `forAll` is as before, though we convert from `Proven` to
    * `Exhausted`. A sized generator can never be proven, since there are always
@@ -110,7 +103,7 @@ object Prop {
           maxSize: Int = 100, // A default argument of `200`
           testCases: Int = 100,
           rng: RNG = RNG.Simple(System.currentTimeMillis)): Unit = {
-    p.run(maxSize, testCases, rng) match {
+    p.run(maxSize, testCases, rng) match
       case Left(msg) => println("! test failed:\n" + msg)
       case Right((Unfalsified,n)) =>
         println("+ property unfalsified, ran " + n + " tests")
@@ -119,7 +112,6 @@ object Prop {
       case Right((Exhausted,n)) =>
         println("+ property unfalsified up to max size, ran " +
                  n + " tests")
-    }
   }
 
   val ES: ExecutorService = Executors.newCachedThreadPool
@@ -284,10 +276,10 @@ object Gen {
     choose(start, if (stopExclusive%2 != 0) stopExclusive - 1 else stopExclusive).
     map (n => if (n%2 == 0) n+1 else n)
 
-  def sameParity(from: Int, to: Int): Gen[(Int,Int)] = for {
+  def sameParity(from: Int, to: Int): Gen[(Int,Int)] = for
     i <- choose(from,to)
     j <- if (i%2 == 0) even(from,to) else odd(from,to)
-  } yield (i,j)
+  yield (i,j)
 
   def listOfN_1[A](n: Int, g: Gen[A]): Gen[List[A]] =
     List.fill(n)(g).foldRight(unit(List[A]()))((a,b) => a.map2(b)(_ :: _))
@@ -337,14 +329,14 @@ object Gen {
    */
   def interleave[A](b: Stream[Boolean], s1: Stream[A], s2: Stream[A]): Stream[A] =
     b.headOption map { hd =>
-      if (hd) s1 match {
+      if (hd) s1 match
         case Cons(h, t) => Stream.cons(h(), interleave(b drop 1, t(), s2))
         case _ => s2
-      }
-      else s2 match {
+
+      else s2 match
         case Cons(h, t) => Stream.cons(h(), interleave(b drop 1, s1, t()))
         case _ => s1
-      }
+
     } getOrElse Stream.empty
 
   def listOf[A](g: Gen[A]): SGen[List[A]] =
@@ -400,18 +392,17 @@ object Gen {
 }
 
 trait SGen[+A] {
-  def map[B](f: A => B): SGen[B] = this match {
+  def map[B](f: A => B): SGen[B] = this match
     case Sized(g) => Sized(g andThen (_ map f))
     case Unsized(g) => Unsized(g map f)
-  }
-  def flatMap[B](f: A => Gen[B]): SGen[B] = this match {
+
+  def flatMap[B](f: A => Gen[B]): SGen[B] = this match
     case Sized(g) => Sized(g andThen (_ flatMap f))
     case Unsized(g) => Unsized(g flatMap f)
-  }
-  def **[B](s2: SGen[B]): SGen[(A,B)] = (this,s2) match {
+
+  def **[B](s2: SGen[B]): SGen[(A,B)] = (this,s2) match
     case (Sized(g), Sized(g2)) => Sized(n => g(n) ** g2(n))
     case (Unsized(g), Unsized(g2)) => Unsized(g ** g2)
     case (Sized(g), Unsized(g2)) => Sized(n => g(n) ** g2)
     case (Unsized(g), Sized(g2)) => Sized(n => g ** g2(n))
-  }
 }

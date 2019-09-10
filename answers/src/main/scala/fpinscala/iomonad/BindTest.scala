@@ -18,12 +18,11 @@ object BindTest extends App {
   def go[F[_]](unit: F[Unit])(f: F[Int] => Int) given (F: Monad[F]): Unit = {
     import given F.toMonadic
     f { (0 to N).map(i => F.map(unit)(_ => i)).foldLeft(F.unit(0)) {
-      (f1, f2) => for {
+      (f1, f2) => for
         acc <- f1
         i <- f2
-      } yield { // if (i == N) println("result: " + (acc+i))
+      yield // if (i == N) println("result: " + (acc+i))
                 (acc + i)
-              }
     }}
   }
 

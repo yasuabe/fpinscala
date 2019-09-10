@@ -76,11 +76,11 @@ object Monoid {
 
   def monoidLaws[A](m: Monoid[A], gen: Gen[A]): Prop =
     // Associativity
-    forAll(for {
+    forAll(for
       x <- gen
       y <- gen
       z <- gen
-    } yield (x, y, z))(p =>
+    yield (x, y, z))(p =>
       m.op(p._1, m.op(p._2, p._3)) == m.op(m.op(p._1, p._2), p._3)) &&
     // Identity
     forAll(gen)((a: A) =>
@@ -110,10 +110,9 @@ object Monoid {
       m.zero
     else if (as.length == 1)
       f(as(0))
-    else {
+    else
       val (l, r) = as.splitAt(as.length / 2)
       m.op(foldMapV(l, m)(f), foldMapV(r, m)(f))
-    }
 
   // This implementation detects only ascending order,
   // but you can write a monoid that detects both ascending and descending
@@ -123,13 +122,13 @@ object Monoid {
     // as well as whether the elements are so far ordered.
     val mon = new Monoid[Option[(Int, Int, Boolean)]] {
       def op(o1: Option[(Int, Int, Boolean)], o2: Option[(Int, Int, Boolean)]) =
-        (o1, o2) match {
+        (o1, o2) match
           // The ranges should not overlap if the sequence is ordered.
           case (Some((x1, y1, p)), Some((x2, y2, q))) =>
             Some((x1 min x2, y1 max y2, p && q && y1 <= x2))
           case (x, None) => x
           case (None, x) => x
-        }
+
       val zero = None
     }
     // The empty sequence is ordered, and each element by itself is ordered.
@@ -160,13 +159,12 @@ object Monoid {
     // The empty result, where we haven't seen any characters yet.
     val zero = Stub("")
 
-    def op(a: WC, b: WC) = (a, b) match {
+    def op(a: WC, b: WC) = (a, b) match
       case (Stub(c), Stub(d)) => Stub(c + d)
       case (Stub(c), Part(l, w, r)) => Part(c + l, w, r)
       case (Part(l, w, r), Stub(c)) => Part(l, w, r + c)
       case (Part(l1, w1, r1), Part(l2, w2, r2)) =>
         Part(l1, w1 + (if ((r1 + l2).isEmpty) 0 else 1) + w2, r2)
-    }
   }
 
   def count(s: String): Int = {
@@ -179,10 +177,9 @@ object Monoid {
         Stub(c.toString)
     // `unstub(s)` is 0 if `s` is empty, otherwise 1.
     def unstub(s: String) = s.length min 1
-    foldMapV(s.toIndexedSeq, wcMonoid)(wc) match {
+    foldMapV(s.toIndexedSeq, wcMonoid)(wc) match
       case Stub(s) => unstub(s)
       case Part(l, w, r) => unstub(l) + w + unstub(r)
-    }
   }
 
   def productMonoid[A,B](A: Monoid[A], B: Monoid[B]): Monoid[(A, B)] =
@@ -267,18 +264,17 @@ enum Tree[+A] {
 import Tree._
 
 object TreeFoldable extends Foldable[Tree] {
-  override def foldMap[A, B](as: Tree[A])(f: A => B)(mb: Monoid[B]): B = as match {
+  override def foldMap[A, B](as: Tree[A])(f: A => B)(mb: Monoid[B]): B = as match
     case Leaf(a) => f(a)
     case Branch(l, r) => mb.op(foldMap(l)(f)(mb), foldMap(r)(f)(mb))
-  }
-  override def foldLeft[A, B](as: Tree[A])(z: B)(f: (B, A) => B) = as match {
+
+  override def foldLeft[A, B](as: Tree[A])(z: B)(f: (B, A) => B) = as match
     case Leaf(a) => f(z, a)
     case Branch(l, r) => foldLeft(r)(foldLeft(l)(z)(f))(f)
-  }
-  override def foldRight[A, B](as: Tree[A])(z: B)(f: (A, B) => B) = as match {
+
+  override def foldRight[A, B](as: Tree[A])(z: B)(f: (A, B) => B) = as match
     case Leaf(a) => f(a, z)
     case Branch(l, r) => foldRight(l)(foldRight(r)(z)(f))(f)
-  }
 }
 
 // Notice that in `TreeFoldable.foldMap`, we don't actually use the `zero`
@@ -290,17 +286,16 @@ object TreeFoldable extends Foldable[Tree] {
 
 object OptionFoldable extends Foldable[Option] {
   override def foldMap[A, B](as: Option[A])(f: A => B)(mb: Monoid[B]): B =
-    as match {
+    as match
       case None => mb.zero
       case Some(a) => f(a)
-    }
-  override def foldLeft[A, B](as: Option[A])(z: B)(f: (B, A) => B) = as match {
+
+  override def foldLeft[A, B](as: Option[A])(z: B)(f: (B, A) => B) = as match
     case None => z
     case Some(a) => f(z, a)
-  }
-  override def foldRight[A, B](as: Option[A])(z: B)(f: (A, B) => B) = as match {
+
+  override def foldRight[A, B](as: Option[A])(z: B)(f: (A, B) => B) = as match
     case None => z
     case Some(a) => f(a, z)
-  }
 }
 

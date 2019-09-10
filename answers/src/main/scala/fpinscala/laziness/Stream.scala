@@ -4,10 +4,9 @@ import Stream._
 enum Stream[+A] {
 
   // The natural recursive solution
-  def toListRecursive: List[A] = this match {
+  def toListRecursive: List[A] = this match
     case Cons(h,t) => h() :: t().toListRecursive
     case _ => List()
-  }
 
   /*
   The above solution will stack overflow for large streams, since it's
@@ -18,10 +17,10 @@ enum Stream[+A] {
   */
   def toList: List[A] = {
     @annotation.tailrec
-    def go(s: Stream[A], acc: List[A]): List[A] = s match {
+    def go(s: Stream[A], acc: List[A]): List[A] = s match
       case Cons(h,t) => go(t(), h() :: acc)
       case _ => acc
-    }
+
     go(this, List()).reverse
   }
 
@@ -34,12 +33,12 @@ enum Stream[+A] {
   def toListFast: List[A] = {
     val buf = collection.mutable.ListBuffer[A]()
     @annotation.tailrec
-    def go(s: Stream[A]): List[A] = s match {
+    def go(s: Stream[A]): List[A] = s match
       case Cons(h,t) =>
         buf += h()
         go(t())
       case _ => buf.toList
-    }
+
     go(this)
   }
 
@@ -49,35 +48,31 @@ enum Stream[+A] {
     we need to, by handling the special case where n == 1 separately. If n == 0, we can avoid looking
     at the stream at all.
   */
-  def take(n: Int): Stream[A] = this match {
+  def take(n: Int): Stream[A] = this match
     case Cons(h, t) if n > 1 => cons(h(), t().take(n - 1))
     case Cons(h, _) if n == 1 => cons(h(), empty)
     case _ => empty
-  }
 
   /*
     Create a new Stream[A] from this, but ignore the n first elements. This can be achieved by recursively calling
     drop on the invoked tail of a cons cell. Note that the implementation is also tail recursive.
   */
   @annotation.tailrec
-  final def drop(n: Int): Stream[A] = this match {
+  final def drop(n: Int): Stream[A] = this match
     case Cons(_, t) if n > 0 => t().drop(n - 1)
     case _ => this
-  }
 
   /*
   It's a common Scala style to write method calls without `.` notation, as in `t() takeWhile f`.
   */
-  def takeWhile(f: A => Boolean): Stream[A] = this match {
+  def takeWhile(f: A => Boolean): Stream[A] = this match
     case Cons(h,t) if f(h()) => cons(h(), t() takeWhile f)
     case _ => empty
-  }
 
   def foldRight[B](z: => B)(f: (A, => B) => B): B = // The arrow `=>` in front of the argument type `B` means that the function `f` takes its second argument by name and may choose not to evaluate it.
-    this match {
+    this match
       case Cons(h,t) => f(h(), t().foldRight(z)(f)) // If `f` doesn't evaluate its second argument, the recursion never occurs.
       case _ => z
-    }
 
   def exists(p: A => Boolean): Boolean =
     foldRight(false)((a, b) => p(a) || b) // Here `b` is the unevaluated recursive step that folds the tail of the stream. If `p(a)` returns `true`, `b` will never be evaluated and the computation terminates early.
@@ -186,10 +181,10 @@ enum Stream[+A] {
     })._2
 
   @annotation.tailrec
-  final def find(f: A => Boolean): Option[A] = this match {
+  final def find(f: A => Boolean): Option[A] = this match
     case Empty => None
     case Cons(h, t) => if (f(h())) Some(h()) else t().find(f)
-  }
+
   case Empty
   case Cons(h: () => A, t: () => Stream[A])
 }
@@ -226,10 +221,9 @@ object Stream {
   }
 
   def unfold[A, S](z: S)(f: S => Option[(A, S)]): Stream[A] =
-    f(z) match {
+    f(z) match
       case Some((h,s)) => cons(h, unfold(s)(f))
       case None => empty
-    }
 
   /*
   The below two implementations use `fold` and `map` functions in the Option class to implement unfold, thereby doing away with the need to manually pattern match as in the above solution.

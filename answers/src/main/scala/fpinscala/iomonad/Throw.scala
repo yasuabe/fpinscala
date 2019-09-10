@@ -13,10 +13,9 @@ trait Throw[+A] {
   import Throw._
 
   @annotation.tailrec
-  final def run: A = this match {
+  final def run: A = this match
     case Done(a) => a
     case More(thunk) => force(thunk).run
-  }
 }
 
 object Throw extends Monad[Throw] {
@@ -37,10 +36,10 @@ object Throw extends Monad[Throw] {
   def ap[A,B](a: A)(f: A => B): B = {
     var ai: Any = a
     var fi: Any => Any = f.asInstanceOf[Any => Any]
-    while true do {
+    while true do
       try return fi(ai).asInstanceOf[B]
       catch { case Call(a2, f2) => ai = a2; fi = f2.asInstanceOf[Any => Any] } // TODO
-    }
+
     null.asInstanceOf[B] // unreachable
   }
 
@@ -55,7 +54,7 @@ object Throw extends Monad[Throw] {
   def unit[A](a: => A): Throw[A] = more(Done(a))
 
   def flatMap[A,B](a: Throw[A])(f: A => Throw[B]): Throw[B] =
-    a match {
+    a match
       case Done(a) => f(a)
       case More(thunk) =>
         try thunk() flatMap f
@@ -63,5 +62,4 @@ object Throw extends Monad[Throw] {
           defer(a0)(g.asInstanceOf[Any => Throw[A]].
                     andThen(_ flatMap f))
         }}
-    }
 }

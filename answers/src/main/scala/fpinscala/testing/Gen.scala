@@ -13,28 +13,25 @@ import Result._
 
 case class Prop(run: (MaxSize,TestCases,RNG) => Result) {
   def &&(p: Prop) = Prop {
-    (max,n,rng) => run(max,n,rng) match {
+    (max,n,rng) => run(max,n,rng) match
       case Passed | Proved => p.run(max, n, rng)
       case x => x
-    }
   }
 
   def ||(p: Prop) = Prop {
-    (max,n,rng) => run(max,n,rng) match {
+    (max,n,rng) => run(max,n,rng) match
       // In case of failure, run the other prop.
       case Falsified(msg, _) => p.tag(msg).run(max,n,rng)
       case x => x
-    }
   }
 
   /* This is rather simplistic - in the event of failure, we simply prepend
    * the given message on a newline in front of the existing message.
    */
   def tag(msg: String) = Prop {
-    (max,n,rng) => run(max,n,rng) match {
+    (max,n,rng) => run(max,n,rng) match
       case Falsified(e, c) => Falsified(msg + "\n" + e, c)
       case x => x
-    }
   }
 }
 
@@ -94,14 +91,13 @@ object Prop {
           maxSize: Int = 100,
           testCases: Int = 100,
           rng: RNG = RNG.Simple(System.currentTimeMillis)): Unit =
-    p.run(maxSize, testCases, rng) match {
+    p.run(maxSize, testCases, rng) match
       case Falsified(msg, n) =>
         println(s"! Falsified after $n passed tests:\n $msg")
       case Passed =>
         println(s"+ OK, passed $testCases tests.")
       case Proved =>
         println(s"+ OK, proved property.")
-    }
 
   val ES: ExecutorService = Executors.newCachedThreadPool
   val p1 = Prop.forAll(Gen.unit(Par.unit(1)))(i =>
@@ -207,10 +203,10 @@ object Gen {
     choose(start, if (stopExclusive%2 != 0) stopExclusive - 1 else stopExclusive).
     map (n => if (n%2 == 0) n+1 else n)
 
-  def sameParity(from: Int, to: Int): Gen[(Int,Int)] = for {
+  def sameParity(from: Int, to: Int): Gen[(Int,Int)] = for
     i <- choose(from,to)
     j <- if (i%2 == 0) even(from,to) else odd(from,to)
-  } yield (i,j)
+  yield (i,j)
 
   def listOfN_1[A](n: Int, g: Gen[A]): Gen[List[A]] =
     List.fill(n)(g).foldRight(unit(List[A]()))((a,b) => a.map2(b)(_ :: _))

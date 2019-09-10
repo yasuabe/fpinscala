@@ -8,11 +8,10 @@ trait These[+A,+B] {
   import These._
 
   def bimap[A2,B2](f: A => A2, g: B => B2): These[A2,B2] = 
-    this match {
+    this match
       case This(a) => This(f(a)) 
       case That(b) => That(g(b)) 
       case Both(a,b) => Both(f(a), g(b)) 
-    }
 
   def mapL[A2,B2>:B](f: A => A2): These[A2,B2] = 
     bimap(f, identity)
@@ -20,10 +19,9 @@ trait These[+A,+B] {
   def mapR[A2>:A,B2](f: B => B2): These[A2,B2] = 
     bimap(identity, f)
 
-  def isBoth = this match {
+  def isBoth = this match
     case Both(_,_) => true
     case _ => false
-  }
 }
 
 object These {

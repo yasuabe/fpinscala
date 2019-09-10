@@ -36,10 +36,9 @@ case class Task[A](get: IO[Either[Throwable, A]]) {
       case a => IO(a)
     })
 
-  def run given (E: ExecutorService): A = unsafePerformIO(get) match {
+  def run given (E: ExecutorService): A = unsafePerformIO(get) match
     case Left(e) => throw e
     case Right(a) => a
-  }
 
   def attemptRun given (E: ExecutorService): Either[Throwable,A] =
     try unsafePerformIO(get) catch { case t: Throwable => Left(t) }

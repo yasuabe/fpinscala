@@ -5,7 +5,7 @@ import fpinscala.monads._
 import scala.reflect.ClassTag
 
 object Mutable {
-  def quicksort(xs: List[Int]): List[Int] = if (xs.isEmpty) xs else {
+  def quicksort(xs: List[Int]): List[Int] = if (xs.isEmpty) xs else
     val arr = xs.toArray
     def swap(x: Int, y: Int) = {
       val tmp = arr(x)
@@ -16,10 +16,10 @@ object Mutable {
       val pivotVal = arr(pivot)
       swap(pivot, r)
       var j = l
-      for (i <- l until r) if (arr(i) < pivotVal) {
+      for (i <- l until r) if (arr(i) < pivotVal)
         swap(i, j)
         j += 1
-      }
+
       swap(j, r)
       j
     }
@@ -30,7 +30,6 @@ object Mutable {
     }
     qs(0, arr.length - 1)
     arr.toList
-  }
 }
 
 sealed trait ST[S,A] { self =>
@@ -105,12 +104,12 @@ sealed abstract class STArray[S,A] given (manifest: ClassTag[A]) {
       case ((k, v), st) => st flatMap (_ => write(k, v))
     }
 
-  def swap(i: Int, j: Int): ST[S,Unit] = for {
+  def swap(i: Int, j: Int): ST[S,Unit] = for
     x <- read(i)
     y <- read(j)
     _ <- write(i, y)
     _ <- write(j, x)
-  } yield ()
+  yield ()
 }
 
 object STArray {
@@ -129,37 +128,37 @@ object STArray {
 object Immutable {
   def noop[S] = ST[S,Unit](())
 
-  def partition[S](a: STArray[S,Int], l: Int, r: Int, pivot: Int): ST[S,Int] = for {
+  def partition[S](a: STArray[S,Int], l: Int, r: Int, pivot: Int): ST[S,Int] = for
     vp <- a.read(pivot)
     _ <- a.swap(pivot, r)
     j <- STRef(l)
-    _ <- (l until r).foldLeft(noop[S])((s, i) => for {
+    _ <- (l until r).foldLeft(noop[S])((s, i) => for
       _ <- s
       vi <- a.read(i)
-      _  <- if (vi < vp) (for {
+      _  <- if (vi < vp) (for
         vj <- j.read
         _  <- a.swap(i, vj)
         _  <- j.write(vj + 1)
-      } yield ()) else noop[S]
-    } yield ())
+      yield ()) else noop[S]
+    yield ())
     x <- j.read
     _ <- a.swap(x, r)
-  } yield x
+  yield x
 
-  def qs[S](a: STArray[S,Int], l: Int, r: Int): ST[S, Unit] = if (l < r) for {
+  def qs[S](a: STArray[S,Int], l: Int, r: Int): ST[S, Unit] = if (l < r) for
     pi <- partition(a, l, r, l + (r - l) / 2)
     _ <- qs(a, l, pi - 1)
     _ <- qs(a, pi + 1, r)
-  } yield () else noop[S]
+  yield () else noop[S]
 
   def quicksort(xs: List[Int]): List[Int] =
     if (xs.isEmpty) xs else ST.runST(new RunnableST[List[Int]] {
-      def apply[S] = for {
+      def apply[S] = for
         arr    <- STArray.fromList(xs)
         size   <- arr.size
         _      <- qs(arr, 0, size - 1)
         sorted <- arr.freeze
-      } yield sorted
+      yield sorted
   })
 }
 

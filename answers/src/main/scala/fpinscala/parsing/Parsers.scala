@@ -176,10 +176,9 @@ trait Parsers[Parser[+_]] { self => // so inner classes may call methods of trai
 case class Location(input: String, offset: Int = 0) {
 
   lazy val line = input.slice(0,offset+1).count(_ == '\n') + 1
-  lazy val col = input.slice(0,offset+1).lastIndexOf('\n') match {
+  lazy val col = input.slice(0,offset+1).lastIndexOf('\n') match
     case -1 => offset + 1
     case lineStart => offset - lineStart
-  }
 
   def toError(msg: String): ParseError =
     ParseError(List((this, msg)))
@@ -222,14 +221,13 @@ case class ParseError(stack: List[(Location,String)] = List()) {
   */
   override def toString =
     if (stack.isEmpty) "no error message"
-    else {
+    else
       val collapsed = collapseStack(stack)
       val context =
         collapsed.lastOption.map("\n\n" + _._1.currentLine).getOrElse("") +
         collapsed.lastOption.map("\n" + _._1.columnCaret).getOrElse("")
       collapsed.map { case (loc,msg) => loc.line.toString + "." + loc.col + " " + msg }.mkString("\n") +
       context
-    }
 
   /* Builds a collapsed version of the given error stack -
    * messages at the same location have their messages merged,

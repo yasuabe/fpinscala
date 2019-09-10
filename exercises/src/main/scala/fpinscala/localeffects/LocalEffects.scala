@@ -4,7 +4,7 @@ import fpinscala.monads._
 import scala.reflect.ClassTag
 
 object Mutable {
-  def quicksort(xs: List[Int]): List[Int] = if (xs.isEmpty) xs else {
+  def quicksort(xs: List[Int]): List[Int] = if (xs.isEmpty) xs else
     val arr = xs.toArray
     def swap(x: Int, y: Int) = {
       val tmp = arr(x)
@@ -15,10 +15,10 @@ object Mutable {
       val pivotVal = arr(pivot)
       swap(pivot, r)
       var j = l
-      for (i <- l until r) if (arr(i) < pivotVal) {
+      for (i <- l until r) if (arr(i) < pivotVal)
         swap(i, j)
         j += 1
-      }
+
       swap(j, r)
       j
     }
@@ -29,7 +29,6 @@ object Mutable {
     }
     qs(0, arr.length - 1)
     arr.toList
-  }
 }
 
 sealed trait ST[S,A] { self =>
@@ -101,12 +100,12 @@ sealed abstract class STArray[S, A] given (manifest: ClassTag[A]) {
 
   def fill(xs: Map[Int,A]): ST[S,Unit] = ???
 
-  def swap(i: Int, j: Int): ST[S,Unit] = for {
+  def swap(i: Int, j: Int): ST[S,Unit] = for
     x <- read(i)
     y <- read(j)
     _ <- write(i, y)
     _ <- write(j, x)
-  } yield ()
+  yield ()
 }
 
 object STArray {
@@ -131,12 +130,12 @@ object Immutable {
 
   def quicksort(xs: List[Int]): List[Int] =
     if (xs.isEmpty) xs else ST.runST(new RunnableST[List[Int]] {
-      def apply[S] = for {
+      def apply[S] = for
         arr    <- STArray.fromList(xs)
         size   <- arr.size
         _      <- qs(arr, 0, size - 1)
         sorted <- arr.freeze
-      } yield sorted
+      yield sorted
   })
 }
 

@@ -62,21 +62,19 @@ object RNG {
   def ints(count: Int)(rng: RNG): (List[Int], RNG) =
     if (count == 0)
       (List(), rng)
-    else {
+    else
       val (x, r1)  = rng.nextInt
       val (xs, r2) = ints(count - 1)(r1)
       (x :: xs, r2)
-    }
 
   // A tail-recursive solution
   def ints2(count: Int)(rng: RNG): (List[Int], RNG) = {
     def go(count: Int, r: RNG, xs: List[Int]): (List[Int], RNG) =
       if (count == 0)
         (xs, r)
-      else {
+      else
         val (x, r2) = r.nextInt
         go(count - 1, r2, x :: xs)
-      }
     go(count, rng, List())
   }
 
@@ -188,10 +186,10 @@ object State {
   // (We could also use a collection.mutable.ListBuffer internally.)
   def sequence[S, A](sas: List[State[S, A]]): State[S, List[A]] = {
     def go(s: S, actions: List[State[S,A]], acc: List[A]): (List[A],S) =
-      actions match {
+      actions match
         case Nil => (acc.reverse,s)
         case h :: t => h.run(s) match { case (a,s2) => go(s2, t, a :: acc) }
-      }
+
     State((s: S) => go(s,sas,List()))
   }
 
@@ -205,10 +203,10 @@ object State {
   def sequenceViaFoldLeft[S,A](l: List[State[S, A]]): State[S, List[A]] =
     l.reverse.foldLeft(unit[S, List[A]](List()))((acc, f) => f.map2(acc)( _ :: _ ))
 
-  def modify[S](f: S => S): State[S, Unit] = for {
+  def modify[S](f: S => S): State[S, Unit] = for
     s <- get // Gets the current state and assigns it to `s`.
     _ <- set(f(s)) // Sets the new state to `f` applied to `s`.
-  } yield ()
+  yield ()
 
   def get[S]: State[S, S] = State(s => (s, s))
 
@@ -225,7 +223,7 @@ case class Machine(locked: Boolean, candies: Int, coins: Int)
 
 object Candy {
   def update = (i: Input) => (s: Machine) =>
-    (i, s) match {
+    (i, s) match
       case (_, Machine(_, 0, _)) => s
       case (Coin, Machine(false, _, _)) => s
       case (Turn, Machine(true, _, _)) => s
@@ -233,11 +231,10 @@ object Candy {
         Machine(false, candy, coin + 1)
       case (Turn, Machine(false, candy, coin)) =>
         Machine(true, candy - 1, coin)
-    }
 
-  def simulateMachine(inputs: List[Input]): State[Machine, (Int, Int)] = for {
+  def simulateMachine(inputs: List[Input]): State[Machine, (Int, Int)] = for
     _ <- sequence(inputs map (modify[Machine] compose update))
     s <- get
-  } yield (s.coins, s.candies)
+  yield (s.coins, s.candies)
 }
 

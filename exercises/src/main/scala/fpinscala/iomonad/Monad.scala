@@ -32,17 +32,17 @@ trait Monad[F[_]] extends Functor[F] {
     lazy val t: F[Unit] = while_(a)(b)
     a flatMap (c => skip(when(c)(t)))
   }
-  def doWhile[A](a: F[A])(cond: A => F[Boolean]): F[Unit] = for {
+  def doWhile[A](a: F[A])(cond: A => F[Boolean]): F[Unit] = for
     a1 <- a
     ok <- cond(a1)
     _ <- if (ok) doWhile(a)(cond) else unit(())
-  } yield ()
+  yield ()
 
   def foldM[A,B](l: LazyList[A])(z: B)(f: (B,A) => F[B]): F[B] =
-    l match {
+    l match
       case h #:: t => f(z,h) flatMap (z2 => foldM(t)(z2)(f))
       case _ => unit(z)
-    }
+
   def foldM_[A,B](l: LazyList[A])(z: B)(f: (B,A) => F[B]): F[Unit] =
     skip { foldM(l)(z)(f) }
   def foreachM[A](l: LazyList[A])(f: A => F[Unit]): F[Unit] =

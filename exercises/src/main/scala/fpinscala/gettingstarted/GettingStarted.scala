@@ -5,8 +5,7 @@ package fpinscala.gettingstarted
 /** A documentation comment */
 object MyModule {
   def abs(n: Int): Int =
-    if (n < 0) -n
-    else n
+    if n < 0 then -n else n
 
   private def formatAbs(x: Int) = {
     val msg = "The absolute value of %d is %d"
@@ -20,8 +19,7 @@ object MyModule {
   def factorial(n: Int): Int = {
     @annotation.tailrec
     def go(n: Int, acc: Int): Int =
-      if (n <= 0) acc
-      else go(n-1, n*acc)
+      if n <= 0 then acc else go(n-1, n*acc)
 
     go(n, 1)
   }
@@ -103,14 +101,14 @@ object MonomorphicBinarySearch {
   def binarySearch(ds: Array[Double], key: Double): Int = {
     @annotation.tailrec
     def go(low: Int, mid: Int, high: Int): Int = {
-      if (low > high) -mid - 1
+      if low > high then -mid - 1
       else
         val mid2 = (low + high) / 2
         val d = ds(mid2) // We index into an array using the same
                          // syntax as function application
-        if (d == key) mid2
-        else if (d > key) go(low, mid2, mid2-1)
-        else go(mid2 + 1, mid2, high)
+        if      d == key then mid2
+        else if d > key  then go(low, mid2, mid2-1)
+        else                  go(mid2 + 1, mid2, high)
     }
     go(0, 0, ds.length - 1)
   }
@@ -124,7 +122,7 @@ object PolymorphicFunctions {
   def binarySearch[A](as: Array[A], key: A, gt: (A,A) => Boolean): Int = {
     @annotation.tailrec
     def go(low: Int, mid: Int, high: Int): Int = {
-      if (low > high) -mid - 1
+      if low > high then -mid - 1
       else
         val mid2 = (low + high) / 2
         val a = as(mid2)

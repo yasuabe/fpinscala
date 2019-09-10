@@ -19,7 +19,7 @@ object List { // `List` companion object. Contains functions for creating and wo
     case Cons(x,xs) => x * product(xs)
 
   def apply[A](as: A*): List[A] = // Variadic function syntax
-    if (as.isEmpty) Nil
+    if as.isEmpty then Nil
     else Cons(as.head, apply(as.tail: _*))
 
   val x = List(1,2,3,4,5) match

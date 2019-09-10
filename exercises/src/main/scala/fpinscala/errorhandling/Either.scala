@@ -22,7 +22,7 @@ object Either {
   def sequence[E,A](es: List[Either[E,A]]): Either[E,List[A]] = sys.error("todo")
 
   def mean(xs: IndexedSeq[Double]): Either[String, Double] = 
-    if (xs.isEmpty) 
+    if xs.isEmpty then 
       Left("mean of empty list!")
     else 
       Right(xs.sum / xs.length)

@@ -59,7 +59,7 @@ object ReferenceTypes {
       if (s1.charAt(i+offset) != s2.charAt(i)) return i
       i += 1
 
-    if (s1.length-offset >= s2.length) -1
+    if s1.length-offset >= s2.length then -1
     else s1.length-offset
   }
 }

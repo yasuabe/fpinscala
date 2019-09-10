@@ -23,7 +23,7 @@ object RNG {
   // This maps Int.MinValue to Int.MaxValue and -1 to 0.
   def nonNegativeInt(rng: RNG): (Int, RNG) = {
     val (i, r) = rng.nextInt
-    (if (i < 0) -(i + 1) else i, r)
+    (if i < 0 then -(i + 1) else i, r)
   }
 
   // We generate an integer >= 0 and divide it by one higher than the
@@ -146,7 +146,7 @@ object RNG {
   def nonNegativeLessThan(n: Int): Rand[Int] = {
     flatMap(nonNegativeInt) { i =>
       val mod = i % n
-      if (i + (n-1) - mod >= 0) unit(mod) else nonNegativeLessThan(n)
+      if i + (n-1) - mod >= 0 then unit(mod) else nonNegativeLessThan(n)
     }
   }
 

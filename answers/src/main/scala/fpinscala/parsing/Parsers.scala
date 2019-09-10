@@ -35,8 +35,8 @@ trait Parsers[Parser[+_]] { self => // so inner classes may call methods of trai
     map2(p, many(p))(_ :: _)
 
   def listOfN[A](n: Int, p: Parser[A]): Parser[List[A]] =
-    if (n <= 0) succeed(List())
-    else map2(p, listOfN(n-1, p))(_ :: _)
+    if n <= 0 then succeed(List())
+    else           map2(p, listOfN(n-1, p))(_ :: _)
 
   def many[A](p: Parser[A]): Parser[List[A]] =
     map2(p, many(p))(_ :: _) or succeed(List())
@@ -187,7 +187,7 @@ case class Location(input: String, offset: Int = 0) {
 
   /* Returns the line corresponding to this location */
   def currentLine: String =
-    if (input.length > 1) input.linesIterator.drop(line-1).next
+    if input.length > 1 then input.linesIterator.drop(line-1).next
     else ""
 
   def columnCaret = (" " * (col-1)) + "^"

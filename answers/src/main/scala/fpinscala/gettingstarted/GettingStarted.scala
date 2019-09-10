@@ -20,8 +20,8 @@ object MyModule {
   def factorial(n: Int): Int = {
     @annotation.tailrec
     def go(n: Int, acc: Int): Int =
-      if (n <= 0) acc
-      else go(n-1, n*acc)
+      if n <= 0 then acc
+      else           go(n-1, n*acc)
 
     go(n, 1)
   }
@@ -42,7 +42,7 @@ object MyModule {
   def fib(n: Int): Int = {
     @annotation.tailrec
     def loop(n: Int, prev: Int, cur: Int): Int =
-      if (n == 0) prev
+      if n == 0 then prev
       else loop(n - 1, cur, prev + cur)
     loop(n, 0, 1)
   }
@@ -100,11 +100,11 @@ object MonomorphicBinarySearch {
     def loop(n: Int): Int =
       // If `n` is past the end of the array, return `-1`
       // indicating the key doesn't exist in the array.
-      if (n >= ss.length) -1
+      if n >= ss.length then -1
       // `ss(n)` extracts the n'th element of the array `ss`.
       // If the element at `n` is equal to the key, return `n`
       // indicating that the element appears in the array at that index.
-      else if (ss(n) == key) n
+      else if ss(n) == key then n
       else loop(n + 1) // Otherwise increment `n` and keep looking.
     // Start the loop at the first element of the array.
     loop(0)
@@ -122,11 +122,11 @@ object PolymorphicFunctions {
   def findFirst[A](as: Array[A], p: A => Boolean): Int = {
     @annotation.tailrec
     def loop(n: Int): Int =
-      if (n >= as.length) -1
+      if n >= as.length then -1
       // If the function `p` matches the current element,
       // we've found a match and we return its index in the array.
-      else if (p(as(n))) n
-      else loop(n + 1)
+      else if p(as(n)) then n
+      else                  loop(n + 1)
 
     loop(0)
   }
@@ -137,9 +137,9 @@ object PolymorphicFunctions {
   def isSorted[A](as: Array[A], gt: (A,A) => Boolean): Boolean = {
     @annotation.tailrec
     def go(n: Int): Boolean =
-      if (n >= as.length-1) true
-      else if (gt(as(n), as(n+1))) false
-      else go(n+1)
+      if      n >= as.length-1   then true
+      else if gt(as(n), as(n+1)) then false
+      else                            go(n+1)
 
     go(0)
   }

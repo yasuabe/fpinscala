@@ -267,7 +267,7 @@ object Traverse {
   case class Iteration[A](a: A, f: A => A, n: Int) {
     def foldMap[B](g: A => B)(M: Monoid[B]): B = {
       def iterate(n: Int, b: B, c: A): B =
-        if (n <= 0) b else iterate(n-1, g(c), f(a))
+        if n <= 0 then b else iterate(n-1, g(c), f(a))
       iterate(n, M.zero, a)
     }
   }

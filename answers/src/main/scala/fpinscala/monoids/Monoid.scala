@@ -106,9 +106,9 @@ object Monoid {
     foldMap(as, dual(endoMonoid[B]))(a => b => f(b, a))(z)
 
   def foldMapV[A, B](as: IndexedSeq[A], m: Monoid[B])(f: A => B): B =
-    if (as.length == 0)
+    if as.length == 0 then
       m.zero
-    else if (as.length == 1)
+    else if as.length == 1 then
       f(as(0))
     else
       val (l, r) = as.splitAt(as.length / 2)

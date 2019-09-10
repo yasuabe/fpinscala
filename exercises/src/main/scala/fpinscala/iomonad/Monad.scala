@@ -23,7 +23,7 @@ trait Monad[F[_]] extends Functor[F] {
   def as[A,B](a: F[A])(b: B): F[B] = map(a)(_ => b)
   def skip[A](a: F[A]): F[Unit] = as(a)(())
   def when[A](b: Boolean)(fa: => F[A]): F[Boolean] =
-    if (b) as(fa)(true) else unit(false)
+    if b then as(fa)(true) else unit(false)
   def forever[A,B](a: F[A]): F[B] = {
     lazy val t: F[B] = a flatMap (_ => t)
     t
@@ -35,7 +35,7 @@ trait Monad[F[_]] extends Functor[F] {
   def doWhile[A](a: F[A])(cond: A => F[Boolean]): F[Unit] = for
     a1 <- a
     ok <- cond(a1)
-    _ <- if (ok) doWhile(a)(cond) else unit(())
+    _ <- if ok then doWhile(a)(cond) else unit(())
   yield ()
 
   def foldM[A,B](l: LazyList[A])(z: B)(f: (B,A) => F[B]): F[B] =

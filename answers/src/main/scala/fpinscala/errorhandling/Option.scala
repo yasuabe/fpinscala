@@ -40,7 +40,7 @@ enum Option[+A] {
   This can also be defined in terms of `flatMap`.
   */
   def filter_1(f: A => Boolean): Option[A] =
-    flatMap(a => if (f(a)) Some(a) else None)
+    flatMap(a => if f(a) then Some(a) else None)
 
   case Some(get: A)
   case None
@@ -69,8 +69,8 @@ object Option {
   }
 
   def mean(xs: Seq[Double]): Option[Double] =
-    if (xs.isEmpty) None
-    else Some(xs.sum / xs.length)
+    if xs.isEmpty then None
+    else               Some(xs.sum / xs.length)
 
   def variance(xs: Seq[Double]): Option[Double] =
     mean(xs) flatMap (m => mean(xs.map(x => math.pow(x - m, 2))))

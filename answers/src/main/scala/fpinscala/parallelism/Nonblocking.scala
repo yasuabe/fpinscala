@@ -66,10 +66,10 @@ object Nonblocking {
           // forks evaluation of the callback `cb`
           val combiner = Actor[Either[A,B]](es) {
             case Left(a) =>
-              if (br.isDefined) eval(es)(cb(f(a,br.get)))
+              if br.isDefined then eval(es)(cb(f(a,br.get)))
               else ar = Some(a)
             case Right(b) =>
-              if (ar.isDefined) eval(es)(cb(f(ar.get,b)))
+              if ar.isDefined then eval(es)(cb(f(ar.get,b)))
               else br = Some(b)
           }
           p(es)(a => combiner ! Left(a))
@@ -131,9 +131,9 @@ object Nonblocking {
     def choice[A](p: Par[Boolean])(t: Par[A], f: Par[A]): Par[A] =
       es => new Future[A] {
         def apply(cb: A => Unit): Unit =
-          p(es) { b =>
-            if (b) eval(es) { t(es)(cb) }
-            else eval(es) { f(es)(cb) }
+          p(es) {
+            if _ then eval(es) { t(es)(cb) }
+            else      eval(es) { f(es)(cb) }
           }
       }
 
@@ -145,7 +145,7 @@ object Nonblocking {
       }
 
     def choiceViaChoiceN[A](a: Par[Boolean])(ifTrue: Par[A], ifFalse: Par[A]): Par[A] =
-      choiceN(map(a)(b => if (b) 0 else 1))(List(ifTrue, ifFalse))
+      choiceN(map(a)(if _ then 0 else 1))(List(ifTrue, ifFalse))
 
     def choiceMap[K,V](p: Par[K])(ps: Map[K,Par[V]]): Par[V] =
       es => new Future[V] {
@@ -164,7 +164,7 @@ object Nonblocking {
       }
 
     def choiceViaFlatMap[A](p: Par[Boolean])(f: Par[A], t: Par[A]): Par[A] =
-      flatMap(p)(b => if (b) t else f)
+      flatMap(p)(if _ then t else f)
 
     def choiceNViaFlatMap[A](p: Par[Int])(choices: List[Par[A]]): Par[A] =
       flatMap(p)(i => choices(i))

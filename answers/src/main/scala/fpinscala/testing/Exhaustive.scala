@@ -49,7 +49,7 @@ object Prop {
   def forAll[A](a: Gen[A])(f: A => Boolean): Prop = Prop {
     (n,rng) => {
       def go(i: Int, j: Int, s: Stream[Option[A]], onEnd: Int => Result): Result =
-        if (i == j) Right((Unfalsified, i))
+        if i == j then Right((Unfalsified, i))
         else s match
           case Cons(h,t) => h() match
             case Some(h) =>
@@ -290,11 +290,11 @@ object Gen {
    * don't get to examine the entire exhaustive stream.
    */
   def union_1[A](g1: Gen[A], g2: Gen[A]): Gen[A] =
-    boolean.flatMap(b => if (b) g1 else g2)
+    boolean.flatMap(b => if b then g1 else g2)
 
   def union[A](g1: Gen[A], g2: Gen[A]): Gen[A] =
     Gen(
-      State(RNG.boolean).flatMap(b => if (b) g1.sample else g2.sample),
+      State(RNG.boolean).flatMap(b => if b then g1.sample else g2.sample),
       interleave(g1.exhaustive, g2.exhaustive)
     )
 
@@ -315,7 +315,7 @@ object Gen {
     def bools: Stream[Boolean] =
       randomStream(uniform.map(_ < g1Threshold))(RNG.Simple(302837L))
 
-    Gen(State(RNG.double).flatMap(d => if (d < g1Threshold) g1._1.sample else g2._1.sample),
+    Gen(State(RNG.double).flatMap(d => if d < g1Threshold then g1._1.sample else g2._1.sample),
         interleave(bools, g1._1.exhaustive, g2._1.exhaustive))
   }
 

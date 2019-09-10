@@ -6,21 +6,20 @@ import scala.{Option => _, Either => _, _}
 
 enum Either[+E,+A] {
   def map[B](f: A => B): Either[E, B] = 
-    this match {
+    this match
       case Right(a) => Right(f(a))
       case Left(e) => Left(e)
-    }
    
   def flatMap[EE >: E, B](f: A => Either[EE, B]): Either[EE, B] =
-    this match {
+    this match
       case Left(e) => Left(e)
       case Right(a) => f(a)
-    }
+
   def orElse[EE >: E, AA >: A](b: => Either[EE, AA]): Either[EE, AA] =
-    this match {
+    this match
       case Left(_) => b
       case Right(a) => Right(a)
-    }
+
   def map2[EE >: E, B, C](b: Either[EE, B])(f: (A, B) => C): 
     Either[EE, C] = for { a <- this; b1 <- b } yield f(a,b1)
 
@@ -30,7 +29,7 @@ enum Either[+E,+A] {
 
 object Either {
   def mean(xs: IndexedSeq[Double]): Either[String, Double] = 
-    if (xs.isEmpty) 
+    if xs.isEmpty then 
       Left("mean of empty list!")
     else 
       Right(xs.sum / xs.length)
@@ -44,10 +43,9 @@ object Either {
     catch { case e: Exception => Left(e) }
 
   def traverse[E,A,B](es: List[A])(f: A => Either[E, B]): Either[E, List[B]] = 
-    es match {
+    es match
       case Nil => Right(Nil)
       case h::t => (f(h) map2 traverse(t)(f))(_ :: _)
-    }
   
   def traverse_1[E,A,B](es: List[A])(f: A => Either[E, B]): Either[E, List[B]] = 
     es.foldRight[Either[E,List[B]]](Right(Nil))((a, b) => f(a).map2(b)(_ :: _))

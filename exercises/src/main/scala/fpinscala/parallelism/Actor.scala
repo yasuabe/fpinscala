@@ -81,14 +81,14 @@ final class Actor[A](strategy: Strategy)(handler: A => Unit, onError: Throwable 
   @tailrec
   private def batchHandle(t: Node[A], i: Int): Node[A] = {
     val n = t.get
-    if (n ne null) {
+    if n ne null then
       try {
         handler(n.a)
       } catch {
         case ex: Throwable => onError(ex)
       }
       if (i > 0) batchHandle(n, i - 1) else n
-    } else t
+    else t
   }
   def this(es: ExecutorService)(handler: A => Unit, onError: Throwable => Unit = throw(_)) =
     this(Strategy.fromExecutorService(es))(handler, onError)

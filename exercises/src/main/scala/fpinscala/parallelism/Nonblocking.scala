@@ -64,10 +64,10 @@ object Nonblocking {
           var br: Option[B] = None
           val combiner = Actor[Either[A,B]](es) {
             case Left(a) =>
-              if (br.isDefined) eval(es)(cb(f(a,br.get)))
+              if br.isDefined then eval(es)(cb(f(a,br.get)))
               else ar = Some(a)
             case Right(b) =>
-              if (ar.isDefined) eval(es)(cb(f(ar.get,b)))
+              if ar.isDefined then eval(es)(cb(f(ar.get,b)))
               else br = Some(b)
           }
           p(es)(a => combiner ! Left(a))
@@ -95,7 +95,7 @@ object Nonblocking {
 
     def sequenceBalanced[A](as: IndexedSeq[Par[A]]): Par[IndexedSeq[A]] = fork {
       if (as.isEmpty) unit(Vector())
-      else if (as.length == 1) map(as.head)(a => Vector(a))
+      else if as.length == 1 then map(as.head)(a => Vector(a))
       else
         val (l,r) = as.splitAt(as.length/2)
         map2(sequenceBalanced(l), sequenceBalanced(r))(_ ++ _)

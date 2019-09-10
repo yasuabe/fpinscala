@@ -147,7 +147,7 @@ object SimpleStreamTransducers {
         cur match
           case Halt() => Halt()
           case Await(recv) =>
-            if (in.nonEmpty) go(in.tail, recv(Some(in.head)))
+            if in.nonEmpty then go(in.tail, recv(Some(in.head)))
             else cur
           case Emit(h, t) => Emit(h, t.feed(in))
 
@@ -178,7 +178,7 @@ object SimpleStreamTransducers {
 
     def repeatN(n: Int): Process[I,O] = {
       def go(n: Int, p: Process[I,O]): Process[I,O] = p match
-        case Halt() => if (n > 0) go(n-1, this) else Halt()
+        case Halt() => if n > 0 then go(n-1, this) else Halt()
         case Await(recv) => Await {
           case None => recv(None)
           case i => go(n,recv(i))
@@ -365,7 +365,7 @@ object SimpleStreamTransducers {
         cur match
           case Halt() => acc
           case Await(recv) =>
-            val next = if (ss.hasNext) recv(Some(ss.next))
+            val next = if ss.hasNext then recv(Some(ss.next))
                        else recv(None)
             go(ss, next, acc)
           case Emit(h, t) => go(ss, t, g(acc, h))
@@ -768,23 +768,23 @@ object GeneralizedStreamTransducers {
       await1[I,O]((i:I) => emit(f(i))) repeat
 
     def filter[I](f: I => Boolean): Process1[I,I] =
-      await1[I,I](i => if (f(i)) emit(i) else halt1) repeat
+      await1[I,I](i => if f(i) then emit(i) else halt1) repeat
 
     // we can define take, takeWhile, and so on as before
 
     def take[I](n: Int): Process1[I,I] =
-      if (n <= 0) halt1
-      else await1[I,I](i => emit(i, take(n-1)))
+      if n <= 0 then halt1
+      else           await1[I,I](i => emit(i, take(n-1)))
 
     def takeWhile[I](f: I => Boolean): Process1[I,I] =
       await1(i =>
-        if (f(i)) emit(i, takeWhile(f))
-        else      halt1)
+        if f(i) then emit(i, takeWhile(f))
+        else         halt1)
 
     def dropWhile[I](f: I => Boolean): Process1[I,I] =
       await1(i =>
-        if (f(i)) dropWhile(f)
-        else      emit(i,id))
+        if f(i) then dropWhile(f)
+        else         emit(i,id))
 
     def id[I]: Process1[I,I] =
       await1((i: I) => emit(i, id))
@@ -937,7 +937,7 @@ object GeneralizedStreamTransducers {
             }}
             { case (rs, cols) =>
                 def step =
-                  if (!rs.next) None
+                  if !rs.next then None
                   else Some(cols.map(c => (c, rs.getObject(c): Any)).toMap)
                 lazy val rows: Process[IO,Map[String,Any]] =
                   eval(IO(step)).flatMap {

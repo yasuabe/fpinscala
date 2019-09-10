@@ -85,8 +85,8 @@ enum Stream[+A] {
 
   def takeWhile_1(f: A => Boolean): Stream[A] =
     foldRight(empty[A])((h,t) =>
-      if (f(h)) cons(h,t)
-      else      empty)
+      if f(h) then cons(h,t)
+      else         empty)
 
   def headOption: Option[A] =
     foldRight(None: Option[A])((h,_) => Some(h))
@@ -96,8 +96,8 @@ enum Stream[+A] {
 
   def filter(f: A => Boolean): Stream[A] =
     foldRight(empty[A])((h,t) =>
-      if (f(h)) cons(h, t)
-      else t)
+      if f(h) then cons(h, t)
+      else         t)
 
   def append[B>:A](s: => Stream[B]): Stream[B] =
     foldRight(s)((h,t) => cons(h,t))

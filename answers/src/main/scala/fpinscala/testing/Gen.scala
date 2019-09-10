@@ -55,7 +55,7 @@ object Prop {
   def forAll[A](as: Gen[A])(f: A => Boolean): Prop = Prop {
     (n,rng) => randomStream(as)(rng).zip(Stream.from(0)).take(n).map {
       case (a, i) => try {
-        if (f(a)) Passed else Falsified(a.toString, i)
+        if f(a) then Passed else Falsified(a.toString, i)
       } catch { case e: Exception => Falsified(buildMsg(a, e), i) }
     }.find(_.isFalsified).getOrElse(Passed)
   }
@@ -104,7 +104,7 @@ object Prop {
     Par.map(i)(_ + 1)(ES).get == Par.unit(2)(ES).get)
 
   def check(p: => Boolean): Prop = Prop { (_, _, _) =>
-    if (p) Passed else Falsified("()", 0)
+    if p then Passed else Falsified("()", 0)
   }
 
   val p2 = check {
@@ -196,29 +196,29 @@ object Gen {
    * integer in the range.
    */
   def even(start: Int, stopExclusive: Int): Gen[Int] =
-    choose(start, if (stopExclusive%2 == 0) stopExclusive - 1 else stopExclusive).
-    map (n => if (n%2 != 0) n+1 else n)
+    choose(start, if stopExclusive%2 == 0 then stopExclusive - 1 else stopExclusive).
+    map (n => if n%2 != 0 then n+1 else n)
 
   def odd(start: Int, stopExclusive: Int): Gen[Int] =
-    choose(start, if (stopExclusive%2 != 0) stopExclusive - 1 else stopExclusive).
-    map (n => if (n%2 == 0) n+1 else n)
+    choose(start, if stopExclusive%2 != 0 then stopExclusive - 1 else stopExclusive).
+    map (n => if n%2 == 0 then n+1 else n)
 
   def sameParity(from: Int, to: Int): Gen[(Int,Int)] = for
     i <- choose(from,to)
-    j <- if (i%2 == 0) even(from,to) else odd(from,to)
+    j <- if i%2 == 0 then even(from,to) else odd(from,to)
   yield (i,j)
 
   def listOfN_1[A](n: Int, g: Gen[A]): Gen[List[A]] =
     List.fill(n)(g).foldRight(unit(List[A]()))((a,b) => a.map2(b)(_ :: _))
 
   def union[A](g1: Gen[A], g2: Gen[A]): Gen[A] =
-    boolean.flatMap(b => if (b) g1 else g2)
+    boolean.flatMap(b => if b then g1 else g2)
 
   def weighted[A](g1: (Gen[A],Double), g2: (Gen[A],Double)): Gen[A] = {
     /* The probability we should pull from `g1`. */
     val g1Threshold = g1._2.abs / (g1._2.abs + g2._2.abs)
 
-    Gen(State(RNG.double).flatMap(d => if (d < g1Threshold) g1._1.sample else g2._1.sample))
+    Gen(State(RNG.double).flatMap(d => if d < g1Threshold then g1._1.sample else g2._1.sample))
   }
 
   def listOf[A](g: Gen[A]): SGen[List[A]] =

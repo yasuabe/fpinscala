@@ -20,8 +20,8 @@ object List { // `List` companion object. Contains functions for creating and wo
     case Cons(x,xs) => x * product(xs)
 
   def apply[A](as: A*): List[A] = // Variadic function syntax
-    if (as.isEmpty) Nil
-    else Cons(as.head, apply(as.tail: _*))
+    if as.isEmpty then Nil
+    else               Cons(as.head, apply(as.tail: _*))
 
   val x = List(1,2,3,4,5) match
     case Cons(x, Cons(2, Cons(4, _))) => x
@@ -80,7 +80,7 @@ object List { // `List` companion object. Contains functions for creating and wo
   If `drop` threw an exception, we'd have to first compute or check the length and only drop up to that many elements.
   */
   def drop[A](l: List[A], n: Int): List[A] =
-    if (n <= 0) l
+    if n <= 0 then l
     else l match
       case Nil => Nil
       case Cons(_,t) => drop(t, n-1)
@@ -235,10 +235,10 @@ object List { // `List` companion object. Contains functions for creating and wo
   The discussion about `map` also applies here.
   */
   def filter[A](l: List[A])(f: A => Boolean): List[A] =
-    foldRight(l, Nil:List[A])((h,t) => if (f(h)) Cons(h,t) else t)
+    foldRight(l, Nil:List[A])((h,t) => if f(h) then Cons(h,t) else t)
 
   def filter_1[A](l: List[A])(f: A => Boolean): List[A] =
-    foldRightViaFoldLeft(l, Nil:List[A])((h,t) => if (f(h)) Cons(h,t) else t)
+    foldRightViaFoldLeft(l, Nil:List[A])((h,t) => if f(h) then Cons(h,t) else t)
 
   def filter_2[A](l: List[A])(f: A => Boolean): List[A] = {
     val buf = collection.mutable.ListBuffer[A]()
@@ -257,7 +257,7 @@ object List { // `List` companion object. Contains functions for creating and wo
     concat(map(l)(f))
 
   def filterViaFlatMap[A](l: List[A])(f: A => Boolean): List[A] =
-    flatMap(l)(a => if (f(a)) List(a) else Nil)
+    flatMap(l)(a => if f(a) then List(a) else Nil)
 
   /*
   To match on multiple values, we can put the values into a pair and match on the pair, as shown next, and the same

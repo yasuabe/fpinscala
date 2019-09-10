@@ -135,7 +135,7 @@ object Immutable {
     _ <- (l until r).foldLeft(noop[S])((s, i) => for
       _ <- s
       vi <- a.read(i)
-      _  <- if (vi < vp) (for
+      _  <- if vi < vp then (for
         vj <- j.read
         _  <- a.swap(i, vj)
         _  <- j.write(vj + 1)
@@ -152,7 +152,7 @@ object Immutable {
   yield () else noop[S]
 
   def quicksort(xs: List[Int]): List[Int] =
-    if (xs.isEmpty) xs else ST.runST(new RunnableST[List[Int]] {
+    if xs.isEmpty then xs else ST.runST(new RunnableST[List[Int]] {
       def apply[S] = for
         arr    <- STArray.fromList(xs)
         size   <- arr.size

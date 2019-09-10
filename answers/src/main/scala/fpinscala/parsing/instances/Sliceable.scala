@@ -98,7 +98,7 @@ object SliceableTypes {
     * longer than s1, returns s.length. */
   def firstNonmatchingIndex(s: String, s2: String, offset: Int): Int = {
     var i = 0
-    while (i+offset < s.length && i < s2.length) {
+    while i+offset < s.length && i < s2.length do {
       if (s.charAt(i+offset) != s2.charAt(i)) return i
       i += 1
     }

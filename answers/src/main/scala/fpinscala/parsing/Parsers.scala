@@ -11,7 +11,7 @@ trait Parsers[Parser[+_]] { self => // so inner classes may call methods of trai
   def run[A](p: Parser[A])(input: String): Either[ParseError,A]
 
   def string(s: String): Parser[String]
-  given operators[A] as Conversion[Parser[A], ParserOps[A]] = ParserOps[A](_)
+  given operators[A] as Conversion[Parser[A], ParserOps[A]] = ParserOps[A]
   given asStringParser[A] as Conversion[A, ParserOps[String]] given (f: A => Parser[String]) = a => ParserOps(f(a))
 
   def char(c: Char): Parser[Char] =

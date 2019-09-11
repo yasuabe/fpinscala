@@ -3,11 +3,11 @@ package fpinscala.iomonad
 import language.higherKinds // Disable warnings for type constructor polymorphism
 import language.implicitConversions
 
-trait Functor[F[_]] {
+trait Functor[F[?]] {
   def map[A,B](a: F[A])(f: A => B): F[B]
 }
 
-trait Monad[F[_]] extends Functor[F] {
+trait Monad[F[?]] extends Functor[F] {
   def unit[A](a: => A): F[A]
   def flatMap[A,B](a: F[A])(f: A => F[B]): F[B]
 
@@ -55,7 +55,7 @@ trait Monad[F[_]] extends Functor[F] {
     a => new Monadic[F,A] { val F = Monad.this; def get = a }
 }
 
-trait Monadic[F[_],A] {
+trait Monadic[F[?],A] {
   val F: Monad[F]
   import F._
   def get: F[A]

@@ -394,11 +394,11 @@ object GeneralizedStreamTransducers {
   type `F[A]`, and receives a response of type `Either[Throwable,A]`:
 
     trait Process[F,A]
-    case class Await[F[_],A,O](
+    case class Await[F[?],A,O](
       req: F[A],
       recv: Either[Throwable,A] => Process[F,O]) extends Process[F,O]
-    case class Halt[F[_],O](err: Throwable) extends Process[F,O]
-    case class Emit[F[_],O](head: O, tail: Process[F,O]) extends Process[F,O]
+    case class Halt[F[?],O](err: Throwable) extends Process[F,O]
+    case class Emit[F[?],O](head: O, tail: Process[F,O]) extends Process[F,O]
 
   The `Await` constructor may now receive a successful result or an error.
 
@@ -412,7 +412,7 @@ object GeneralizedStreamTransducers {
 
                              */
 
-  trait Process[F[_],O] {
+  trait Process[F[?],O] {
     import Process._
 
     /*
@@ -584,29 +584,29 @@ object GeneralizedStreamTransducers {
   }
 
   object Process {
-    case class Await[F[_],A,O](
+    case class Await[F[?],A,O](
       req: F[A],
       recv: Either[Throwable,A] => Process[F,O]) extends Process[F,O]
 
-    case class Emit[F[_],O](
+    case class Emit[F[?],O](
       head: O,
       tail: Process[F,O]) extends Process[F,O]
 
-    case class Halt[F[_],O](err: Throwable) extends Process[F,O]
+    case class Halt[F[?],O](err: Throwable) extends Process[F,O]
 
-    def emit[F[_],O](
+    def emit[F[?],O](
         head: O,
         tail: Process[F,O] = Halt[F,O](End)): Process[F,O] =
       Emit(head, tail)
 
-    def await[F[_],A,O](req: F[A])(recv: Either[Throwable,A] => Process[F,O]): Process[F,O] =
+    def await[F[?],A,O](req: F[A])(recv: Either[Throwable,A] => Process[F,O]): Process[F,O] =
       Await(req, recv)
 
     /**
      * Helper function to safely produce `p`, or gracefully halt
      * with an error if an exception is thrown.
      */
-    def Try[F[_],O](p: => Process[F,O]): Process[F,O] =
+    def Try[F[?],O](p: => Process[F,O]): Process[F,O] =
       try p
       catch { case e: Throwable => Halt(e) }
 
@@ -614,7 +614,7 @@ object GeneralizedStreamTransducers {
      * Safely produce `p`, or run `cleanup` and halt gracefully with the
      * exception thrown while evaluating `p`.
      */
-    def TryOr[F[_],O](p: => Process[F,O])(cleanup: Process[F,O]): Process[F,O] =
+    def TryOr[F[?],O](p: => Process[F,O])(cleanup: Process[F,O]): Process[F,O] =
       try p
       catch { case e: Throwable => cleanup ++ Halt(e) }
 
@@ -622,7 +622,7 @@ object GeneralizedStreamTransducers {
      * Safely produce `p`, or run `cleanup` or `fallback` if an exception
      * occurs while evaluating `p`.
      */
-    def TryAwait[F[_],O](p: => Process[F,O])(fallback: Process[F,O], cleanup: Process[F,O]): Process[F,O] =
+    def TryAwait[F[?],O](p: => Process[F,O])(fallback: Process[F,O], cleanup: Process[F,O]): Process[F,O] =
       try p
       catch
         case End => fallback
@@ -723,10 +723,10 @@ object GeneralizedStreamTransducers {
         { src => eval_ { IO(src.close) } }
 
     /* Exercise 11: Implement `eval`, `eval_`, and use these to implement `lines`. */
-    def eval[F[_],A](a: F[A]): Process[F,A] = ???
+    def eval[F[?],A](a: F[A]): Process[F,A] = ???
 
     /* Evaluate the action purely for its effects. */
-    def eval_[F[_],A,B](a: F[A]): Process[F,B] = ???
+    def eval_[F[?],A,B](a: F[A]): Process[F,B] = ???
 
     /* Helper function with better type inference. */
     def evalIO[A](a: IO[A]): Process[IO,A] =
@@ -871,7 +871,7 @@ object GeneralizedStreamTransducers {
 
                              */
 
-    type Sink[F[_],O] = Process[F, O => Process[F,Unit]]
+    type Sink[F[?],O] = Process[F, O => Process[F,Unit]]
 
     import java.io.FileWriter
 
@@ -887,7 +887,7 @@ object GeneralizedStreamTransducers {
       eval(IO(a)).flatMap { a => Emit(a, constant(a)) }
 
     /* Exercise 12: Implement `join`. Notice this is the standard monadic combinator! */
-    def join[F[_],A](p: Process[F,Process[F,A]]): Process[F,A] = ???
+    def join[F[?],A](p: Process[F,Process[F,A]]): Process[F,A] = ???
 
     /*
      * An example use of the combinators we have so far: incrementally
@@ -911,7 +911,7 @@ object GeneralizedStreamTransducers {
 
                              */
 
-    type Channel[F[_],I,O] = Process[F, I => Process[F,O]]
+    type Channel[F[?],I,O] = Process[F, I => Process[F,O]]
 
     /*
      * Here is an example, a JDBC query runner which returns the

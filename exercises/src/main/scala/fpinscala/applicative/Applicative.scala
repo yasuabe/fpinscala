@@ -9,7 +9,7 @@ import monoids._
 import language.higherKinds
 import language.implicitConversions
 
-trait Applicative[F[_]] extends Functor[F] {
+trait Applicative[F[?]] extends Functor[F] {
 
   def map2[A,B,C](fa: F[A], fb: F[B])(f: (A, B) => C): F[C] = ???
 
@@ -28,16 +28,16 @@ trait Applicative[F[_]] extends Functor[F] {
 
   def factor[A,B](fa: F[A], fb: F[B]): F[(A,B)] = ???
 
-  def product[G[_]](G: Applicative[G]): Applicative[({type f[x] = (F[x], G[x])})#f] = ???
+  def product[G[?]](G: Applicative[G]): Applicative[({type f[x] = (F[x], G[x])})#f] = ???
 
-  def compose[G[_]](G: Applicative[G]): Applicative[({type f[x] = F[G[x]]})#f] = ???
+  def compose[G[?]](G: Applicative[G]): Applicative[({type f[x] = F[G[x]]})#f] = ???
 
   def sequenceMap[K,V](ofa: Map[K,F[V]]): F[Map[K,V]] = ???
 }
 
 case class Tree[+A](head: A, tail: List[Tree[A]])
 
-trait Monad[F[_]] extends Applicative[F] {
+trait Monad[F[?]] extends Applicative[F] {
   def flatMap[A,B](ma: F[A])(f: A => F[B]): F[B] = join(map(ma)(f))
 
   def join[A](mma: F[F[A]]): F[A] = flatMap(mma)(ma => ma)
@@ -58,7 +58,7 @@ object Monad {
       st flatMap f
   }
 
-  def composeM[F[_],N[_]] given (F: Monad[F], N: Monad[N], T: Traverse[N]):
+  def composeM[F[?],N[?]] given (F: Monad[F], N: Monad[N], T: Traverse[N]):
     Monad[({type f[x] = F[N[x]]})#f] = ???
 }
 
@@ -90,10 +90,10 @@ object Applicative {
   }
 }
 
-trait Traverse[F[_]] extends Functor[F] with Foldable[F] {
-  def traverse[G[_]:Applicative,A,B](fa: F[A])(f: A => G[B]): G[F[B]] =
+trait Traverse[F[?]] extends Functor[F] with Foldable[F] {
+  def traverse[G[?]:Applicative,A,B](fa: F[A])(f: A => G[B]): G[F[B]] =
     sequence(map(fa)(f))
-  def sequence[G[_]:Applicative,A](fma: F[G[A]]): G[F[A]] =
+  def sequence[G[?]:Applicative,A](fma: F[G[A]]): G[F[A]] =
     traverse(fma)(ma => ma)
 
   def map[A,B](fa: F[A])(f: A => B): F[B] = ???
@@ -123,10 +123,10 @@ trait Traverse[F[_]] extends Functor[F] with Foldable[F] {
 
   override def foldLeft[A,B](fa: F[A])(z: B)(f: (B, A) => B): B = ???
 
-  def fuse[G[_],H[_],A,B](fa: F[A])(f: A => G[B], g: A => H[B])
+  def fuse[G[?],H[?],A,B](fa: F[A])(f: A => G[B], g: A => H[B])
                          given (G: Applicative[G], H: Applicative[H]): (G[F[B]], H[F[B]]) = ???
 
-  def compose[G[_]] given (G: Traverse[G]): Traverse[({type f[x] = F[G[x]]})#f] = ???
+  def compose[G[?]] given (G: Traverse[G]): Traverse[({type f[x] = F[G[x]]})#f] = ???
 }
 
 object Traverse {

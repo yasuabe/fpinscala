@@ -24,7 +24,7 @@ def par[A](a: Par[A]): IO[A] = Suspend(a)
 def async[A](cb: ((A => Unit) => Unit)): IO[A] =
   fork(par(Par.async(cb)))
 
-type Free[F[_], A] = IO3.Free[F, A]
+type Free[F[?], A] = IO3.Free[F, A]
 
 def Return[A](a: A): IO[A] = FreeReturn[Par,A](a)
 

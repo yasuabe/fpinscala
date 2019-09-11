@@ -15,7 +15,7 @@ object BindTest extends App {
 
   val N = 100000
 
-  def go[F[_]](unit: F[Unit])(f: F[Int] => Int) given (F: Monad[F]): Unit = {
+  def go[F[?]](unit: F[Unit])(f: F[Int] => Int) given (F: Monad[F]): Unit = {
     import given F.toMonadic
     f { (0 to N).map(i => F.map(unit)(_ => i)).foldLeft(F.unit(0)) {
       (f1, f2) => for

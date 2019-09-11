@@ -9,7 +9,7 @@ import parallelism.Par._
 import language.higherKinds
 
 
-trait Functor[F[_]] {
+trait Functor[F[?]] {
   def map[A,B](fa: F[A])(f: A => B): F[B]
 
   def distribute[A,B](fab: F[(A, B)]): (F[A], F[B]) =
@@ -26,7 +26,7 @@ object Functor {
   }
 }
 
-trait Monad[M[_]] extends Functor[M] {
+trait Monad[M[?]] extends Functor[M] {
   def unit[A](a: => A): M[A]
   def flatMap[A,B](ma: M[A])(f: A => M[B]): M[B]
 
@@ -63,7 +63,7 @@ object Monad {
 
   val parMonad: Monad[Par] = ???
 
-  def parserMonad[P[+_]](p: Parsers[P]): Monad[P] = ???
+  def parserMonad[P[+?]](p: Parsers[P]): Monad[P] = ???
 
   val optionMonad: Monad[Option] = ???
 

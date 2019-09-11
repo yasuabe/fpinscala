@@ -211,7 +211,7 @@ object Monoid {
 
 }
 
-trait Foldable[F[_]] {
+trait Foldable[F[?]] {
   import Monoid._
 
   def foldRight[A,B](as: F[A])(z: B)(f: (A, B) => B): B =

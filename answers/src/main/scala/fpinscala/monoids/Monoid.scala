@@ -6,7 +6,7 @@ import language.higherKinds
 import language.implicitConversions
 
 trait Monoid[A] {
-  def op(a1: A, a2: A): A
+  def (a1: A) op(a2: A): A
   def zero: A
 }
 
@@ -56,7 +56,7 @@ object Monoid {
 
   // We can get the dual of any monoid just by flipping the `op`.
   def dual[A](m: Monoid[A]): Monoid[A] = new Monoid[A] {
-    def op(x: A, y: A): A = m.op(y, x)
+    def (x: A) op (y: A): A = m.op(y)(x)
     val zero = m.zero
   }
 
@@ -75,44 +75,45 @@ object Monoid {
   import Prop._
 
   def monoidLaws[A](m: Monoid[A], gen: Gen[A]): Prop =
+    given as Monoid[A] = m
     // Associativity
     forAll(for
       x <- gen
       y <- gen
       z <- gen
     yield (x, y, z))(p =>
-      m.op(p._1, m.op(p._2, p._3)) == m.op(m.op(p._1, p._2), p._3)) &&
+      (p._1 op (p._2 op p._3)) == ((p._1 op p._2) op p._3)) &&
     // Identity
     forAll(gen)((a: A) =>
-      m.op(a, m.zero) == a && m.op(m.zero, a) == a)
+      (a op m.zero) == a && (m.zero op a) == a)
 
   def concatenate[A](as: List[A], m: Monoid[A]): A =
-    as.foldLeft(m.zero)(m.op)
+    as.foldLeft(m.zero)(m.op(_)(_))
 
   // Notice that this function does not require the use of `map` at all.
   // All we need is `foldLeft`.
-  def foldMap[A, B](as: List[A], m: Monoid[B])(f: A => B): B =
-    as.foldLeft(m.zero)((b, a) => m.op(b, f(a)))
+  def foldMap[A, B](as: List[A])(f: A => B) given (m: Monoid[B]): B =
+    as.foldLeft(m.zero)((b, a) => b op f(a))
 
   // The function type `(A, B) => B`, when curried, is `A => (B => B)`.
   // And of course, `B => B` is a monoid for any `B` (via function composition).
   def foldRight[A, B](as: List[A])(z: B)(f: (A, B) => B): B =
-    foldMap(as, endoMonoid[B])(f.curried)(z)
+    (foldMap(as)(f.curried) given endoMonoid[B])(z)
 
   // Folding to the left is the same except we flip the arguments to
   // the function `f` to put the `B` on the correct side.
   // Then we have to also "flip" the monoid so that it operates from left to right.
   def foldLeft[A, B](as: List[A])(z: B)(f: (B, A) => B): B =
-    foldMap(as, dual(endoMonoid[B]))(a => b => f(b, a))(z)
+    (foldMap[A, B => B](as)(a => b => f(b, a)) given dual(endoMonoid[B]))(z)
 
-  def foldMapV[A, B](as: IndexedSeq[A], m: Monoid[B])(f: A => B): B =
+  def foldMapV[A, B](as: IndexedSeq[A])(f: A => B) given (m: Monoid[B]): B =
     if as.length == 0 then
       m.zero
     else if as.length == 1 then
       f(as(0))
     else
       val (l, r) = as.splitAt(as.length / 2)
-      m.op(foldMapV(l, m)(f), foldMapV(r, m)(f))
+      (foldMapV(l)(f) op foldMapV(r)(f))
 
   // This implementation detects only ascending order,
   // but you can write a monoid that detects both ascending and descending
@@ -120,7 +121,7 @@ object Monoid {
   def ordered(ints: IndexedSeq[Int]): Boolean = {
     // Our monoid tracks the minimum and maximum element seen so far
     // as well as whether the elements are so far ordered.
-    val mon = new Monoid[Option[(Int, Int, Boolean)]] {
+    given as Monoid[Option[(Int, Int, Boolean)]] {
       def op(o1: Option[(Int, Int, Boolean)], o2: Option[(Int, Int, Boolean)]) =
         (o1, o2) match
           // The ranges should not overlap if the sequence is ordered.
@@ -132,7 +133,7 @@ object Monoid {
       val zero = None
     }
     // The empty sequence is ordered, and each element by itself is ordered.
-    foldMapV(ints, mon)(i => Some((i, i, true))).map(_._3).getOrElse(true)
+    (foldMapV(ints)(i => Option((i, i, true)))).map(_._3).getOrElse(true)
   }
 
   // This ability to 'lift' a monoid any monoid to operate within
@@ -140,13 +141,13 @@ object Monoid {
   // chapters 11 & 12
   def par[A](m: Monoid[A]): Monoid[Par[A]] = new Monoid[Par[A]] {
     def zero = Par.unit(m.zero)
-    def op(a: Par[A], b: Par[A]) = a.map2(b)(m.op)
+    def op(a: Par[A], b: Par[A]) = a.map2(b)(m.op(_)(_))
   }
 
   // we perform the mapping and the reducing both in parallel
   def parFoldMap[A,B](v: IndexedSeq[A], m: Monoid[B])(f: A => B): Par[B] =
     Par.parMap(v)(f).flatMap { bs =>
-      foldMapV(bs, par(m))(b => Par.lazyUnit(b))
+      foldMapV(bs)(b => Par.lazyUnit(b)) given par(m)
     }
 
   enum WC {
@@ -177,7 +178,7 @@ object Monoid {
         Stub(c.toString)
     // `unstub(s)` is 0 if `s` is empty, otherwise 1.
     def unstub(s: String) = s.length min 1
-    foldMapV(s.toIndexedSeq, wcMonoid)(wc) match
+    foldMapV(s.toIndexedSeq)(wc) given wcMonoid match
       case Stub(s) => unstub(s)
       case Part(l, w, r) => unstub(l) + w + unstub(r)
   }
@@ -185,29 +186,28 @@ object Monoid {
   def productMonoid[A,B](A: Monoid[A], B: Monoid[B]): Monoid[(A, B)] =
     new Monoid[(A, B)] {
       def op(x: (A, B), y: (A, B)) =
-        (A.op(x._1, y._1), B.op(x._2, y._2))
+        (A.op(x._1)(y._1), B.op(x._2)(y._2))
       val zero = (A.zero, B.zero)
     }
 
-  def functionMonoid[A,B](B: Monoid[B]): Monoid[A => B] =
+  def functionMonoid[A,B] given (B: Monoid[B]): Monoid[A => B] =
     new Monoid[A => B] {
-      def op(f: A => B, g: A => B) = a => B.op(f(a), g(a))
+      def op(f: A => B, g: A => B) = (a: A) => f(a) op g(a)
       val zero: A => B = a => B.zero
     }
 
-  def mapMergeMonoid[K,V](V: Monoid[V]): Monoid[Map[K, V]] =
+  def mapMergeMonoid[K,V] given (V: Monoid[V]): Monoid[Map[K, V]] =
     new Monoid[Map[K, V]] {
       def zero = Map[K,V]()
       def op(a: Map[K, V], b: Map[K, V]) =
         (a.keySet ++ b.keySet).foldLeft(zero) { (acc,k) =>
-          acc.updated(k, V.op(a.getOrElse(k, V.zero),
-                              b.getOrElse(k, V.zero)))
+          acc.updated(k, a.getOrElse(k, V.zero) op b.getOrElse(k, V.zero))
         }
     }
 
 
   def bag[A](as: IndexedSeq[A]): Map[A, Int] =
-    foldMapV(as, mapMergeMonoid[A, Int](intAddition))((a: A) => Map(a -> 1))
+    foldMapV(as)((a: A) => Map(a -> 1)) given (mapMergeMonoid[A, Int] given intAddition)
 
 }
 
@@ -215,16 +215,16 @@ trait Foldable[F[?]] {
   import Monoid._
 
   def foldRight[A,B](as: F[A])(z: B)(f: (A, B) => B): B =
-    foldMap(as)(f.curried)(endoMonoid[B])(z)
+    (foldMap(as)(f.curried) given endoMonoid[B])(z)
 
   def foldLeft[A,B](as: F[A])(z: B)(f: (B, A) => B): B =
-    foldMap(as)(a => (b: B) => f(b, a))(dual(endoMonoid[B]))(z)
+    (foldMap(as)(a => (b: B) => f(b, a)) given dual(endoMonoid[B]))(z)
 
-  def foldMap[A, B](as: F[A])(f: A => B)(mb: Monoid[B]): B =
-    foldRight(as)(mb.zero)((a, b) => mb.op(f(a), b))
+  def foldMap[A, B](as: F[A])(f: A => B) given (mb: Monoid[B]): B =
+    foldRight(as)(mb.zero)((a, b) => f(a) op b)
 
-  def concatenate[A](as: F[A])(m: Monoid[A]): A =
-    foldLeft(as)(m.zero)(m.op)
+  def concatenate[A](as: F[A]) given (m: Monoid[A]): A =
+    foldLeft(as)(m.zero)(m.op(_)(_))
 
   def toList[A](as: F[A]): List[A] =
     foldRight(as)(List[A]())(_ :: _)
@@ -235,8 +235,8 @@ object ListFoldable extends Foldable[List] {
     as.foldRight(z)(f)
   override def foldLeft[A, B](as: List[A])(z: B)(f: (B, A) => B) =
     as.foldLeft(z)(f)
-  override def foldMap[A, B](as: List[A])(f: A => B)(mb: Monoid[B]): B =
-    foldLeft(as)(mb.zero)((b, a) => mb.op(b, f(a)))
+  override def foldMap[A, B](as: List[A])(f: A => B) given (mb: Monoid[B]): B =
+    foldLeft(as)(mb.zero)((b, a) => b op f(a))
   override def toList[A](as: List[A]): List[A] = as
 }
 
@@ -246,8 +246,8 @@ object IndexedSeqFoldable extends Foldable[IndexedSeq] {
     as.foldRight(z)(f)
   override def foldLeft[A, B](as: IndexedSeq[A])(z: B)(f: (B, A) => B) =
     as.foldLeft(z)(f)
-  override def foldMap[A, B](as: IndexedSeq[A])(f: A => B)(mb: Monoid[B]): B =
-    foldMapV(as, mb)(f)
+  override def foldMap[A, B](as: IndexedSeq[A])(f: A => B) given (mb: Monoid[B]): B =
+    foldMapV(as)(f) given mb
 }
 
 object StreamFoldable extends Foldable[Stream] {
@@ -264,9 +264,9 @@ enum Tree[+A] {
 import Tree._
 
 object TreeFoldable extends Foldable[Tree] {
-  override def foldMap[A, B](as: Tree[A])(f: A => B)(mb: Monoid[B]): B = as match
+  override def foldMap[A, B](as: Tree[A])(f: A => B) given (mb: Monoid[B]): B = as match
     case Leaf(a) => f(a)
-    case Branch(l, r) => mb.op(foldMap(l)(f)(mb), foldMap(r)(f)(mb))
+    case Branch(l, r) =>foldMap(l)(f) op foldMap(r)(f)
 
   override def foldLeft[A, B](as: Tree[A])(z: B)(f: (B, A) => B) = as match
     case Leaf(a) => f(z, a)
@@ -285,7 +285,7 @@ object TreeFoldable extends Foldable[Tree] {
 // called a semigroup. `Tree` itself is not a monoid, but it is a semigroup.
 
 object OptionFoldable extends Foldable[Option] {
-  override def foldMap[A, B](as: Option[A])(f: A => B)(mb: Monoid[B]): B =
+  override def foldMap[A, B](as: Option[A])(f: A => B) given (mb: Monoid[B]): B =
     as match
       case None => mb.zero
       case Some(a) => f(a)

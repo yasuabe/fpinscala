@@ -108,9 +108,8 @@ object Applicative {
 
   given MonoidApplicative[M] as Applicative[[X] =>> Const[M, X] ] given (M: Monoid[M]) {
     def unit[A](a: => A): M = M.zero
-    override def apply[A,B](m1: M)(m2: M): M = M.op(m1, m2)
+    override def apply[A,B](m1: M)(m2: M): M = m1 op m2
   }
-
 }
 
 trait Monad[F[?]] extends Applicative[F] {

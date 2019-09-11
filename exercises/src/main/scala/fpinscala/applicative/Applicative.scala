@@ -28,9 +28,9 @@ trait Applicative[F[?]] extends Functor[F] {
 
   def factor[A,B](fa: F[A], fb: F[B]): F[(A,B)] = ???
 
-  def product[G[?]](G: Applicative[G]): Applicative[({type f[x] = (F[x], G[x])})#f] = ???
+  def product[G[?]](G: Applicative[G]): Applicative[[X] =>> (F[X], G[X])] = ???
 
-  def compose[G[?]](G: Applicative[G]): Applicative[({type f[x] = F[G[x]]})#f] = ???
+  def compose[G[?]](G: Applicative[G]): Applicative[[X] =>> F[G[X]]] = ???
 
   def sequenceMap[K,V](ofa: Map[K,F[V]]): F[Map[K,V]] = ???
 }
@@ -50,16 +50,16 @@ trait Monad[F[?]] extends Applicative[F] {
 }
 
 object Monad {
-  def eitherMonad[E]: Monad[({type f[x] = Either[E, x]})#f] = ???
+  def eitherMonad[E]: Monad[[X] =>> Either[E, X]] = ???
 
-  def stateMonad[S] = new Monad[({type f[x] = State[S, x]})#f] {
+  def stateMonad[S] = new Monad[[X] =>> State[S, X]] {
     def unit[A](a: => A): State[S, A] = State(s => (a, s))
     override def flatMap[A,B](st: State[S, A])(f: A => State[S, B]): State[S, B] =
       st flatMap f
   }
 
   def composeM[F[?],N[?]] given (F: Monad[F], N: Monad[N], T: Traverse[N]):
-    Monad[({type f[x] = F[N[x]]})#f] = ???
+    Monad[[X] =>> F[N[X]]] = ???
 }
 
 enum Validation[+E, +A] {
@@ -80,11 +80,11 @@ object Applicative {
       a zip b map f.tupled
   }
 
-  def validationApplicative[E]: Applicative[({type f[x] = Validation[E,x]})#f] = ???
+  def validationApplicative[E]: Applicative[[X] =>> Validation[E, X]] = ???
 
   type Const[A, B] = A
 
-  given monoidApplicative[M] as Applicative[({ type f[x] = Const[M, x] })#f] given (M: Monoid[M]) {
+  given monoidApplicative[M] as Applicative[[X] =>> Const[M, X]] given (M: Monoid[M]) {
     def unit[A](a: => A): M = M.zero
     override def apply[A,B](m1: M)(m2: M): M = M.op(m1, m2)
   }
@@ -101,10 +101,10 @@ trait Traverse[F[?]] extends Functor[F] with Foldable[F] {
   import Applicative._
 
   override def foldMap[A,B](as: F[A])(f: A => B) given (mb: Monoid[B]): B =
-    traverse[({type f[x] = Const[B, x]})#f, A, Nothing](as)(f)
+    traverse[[X] =>> Const[B, X], A, Nothing](as)(f)
 
   def traverseS[S,A,B](fa: F[A])(f: A => State[S, B]): State[S, F[B]] =
-    traverse[({type f[x] = State[S,x]})#f, A, B](fa)(f)(Monad.stateMonad)
+    traverse[[X] =>> State[S, X], A, B](fa)(f)(Monad.stateMonad)
 
   def mapAccum[S,A,B](fa: F[A], s: S)(f: (A, S) => (B, S)): (F[B], S) =
     traverseS(fa)((a: A) => (for
@@ -126,7 +126,7 @@ trait Traverse[F[?]] extends Functor[F] with Foldable[F] {
   def fuse[G[?],H[?],A,B](fa: F[A])(f: A => G[B], g: A => H[B])
                          given (G: Applicative[G], H: Applicative[H]): (G[F[B]], H[F[B]]) = ???
 
-  def compose[G[?]] given (G: Traverse[G]): Traverse[({type f[x] = F[G[x]]})#f] = ???
+  def compose[G[?]] given (G: Traverse[G]): Traverse[[X] =>> F[G[X]]] = ???
 }
 
 object Traverse {

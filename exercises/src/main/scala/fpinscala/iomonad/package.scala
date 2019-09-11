@@ -9,7 +9,7 @@ import IO3.Free.{Return => FreeReturn, _}
 type IO[A] = IO3.IO[A]
 def IO[A](a: => A): IO[A] = IO3.IO[A](a)
 
-given ioMonad as Monad[({type f[a] = IO3.Free[Par, a]})#f] = IO3.freeMonad[Par]
+given ioMonad as Monad[[X] =>> IO3.Free[Par, X]] = IO3.freeMonad[Par]
 
 def now[A](a: A): IO[A] = Return(a)
 

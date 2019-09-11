@@ -84,7 +84,7 @@ case class Id[A](value: A) {
 }
 
 object Reader {
-  def readerMonad[R] = new Monad[({type f[x] = Reader[R,x]})#f] {
+  def readerMonad[R] = new Monad[[X] =>> Reader[R, X]] {
     def unit[A](a: => A): Reader[R,A] = ???
     override def flatMap[A,B](st: Reader[R,A])(f: A => Reader[R,B]): Reader[R,B] = ???
   }

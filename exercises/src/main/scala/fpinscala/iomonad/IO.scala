@@ -369,7 +369,7 @@ object IO3 {
   import Free._
 
   // Exercise 1: Implement the free monad
-  def freeMonad[F[?]]: Monad[({type f[a] = Free[F,a]})#f] = ???
+  def freeMonad[F[?]]: Monad[[X] =>> Free[F, X]] = ???
 
   // Exercise 2: Implement a specialized `Function0` interpreter.
   // @annotation.tailrec

@@ -377,8 +377,8 @@ object IO3 {
   import Free._
 
   // Exercise 1: Implement the free monad
-  def freeMonad[F[?]]: Monad[({type f[a] = Free[F,a]})#f] =
-    new Monad[({type f[a] = Free[F,a]})#f] {
+  def freeMonad[F[?]]: Monad[[X] =>> Free[F, X]] =
+    new Monad[[X] =>> Free[F, X]] {
       def unit[A](a: => A) = Return(a)
       def flatMap[A,B](fa: Free[F, A])(f: A => Free[F, B]) = fa flatMap f
     }

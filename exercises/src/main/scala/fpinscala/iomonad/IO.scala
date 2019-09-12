@@ -464,13 +464,15 @@ object IO3 {
       case FlatMap(Suspend(r), f) => G.flatMap(t(r))(a => runFree(f(a))(t))
       case _ => sys.error("Impossible, since `step` eliminates these cases")
 
-  val consoleToFunction0 =
-    new (Console ~> Function0) { def apply[A](a: Console[A]) = a.toThunk }
-  val consoleToPar =
-    new (Console ~> Par) { def apply[A](a: Console[A]) = a.toPar }
-
+  given consoleToFunction0 as (Console ~> Function0) {
+    def apply[A](a: Console[A]) = a.toThunk
+  }
+  given consoleToPar as (Console ~> Par) {
+    def apply[A](a: Console[A]) = a.toPar
+  }
   def runConsoleFunction0[A](a: Free[Console,A]): () => A =
     runFree[Console,Function0,A](a)(consoleToFunction0)
+
   def runConsolePar[A](a: Free[Console,A]): Par[A] =
     runFree[Console,Par,A](a)(consoleToPar)
 
@@ -531,11 +533,12 @@ object IO3 {
     }
   }
 
-  val consoleToState =
-    new (Console ~> ConsoleState) { def apply[A](a: Console[A]) = a.toState }
-  val consoleToReader =
-    new (Console ~> ConsoleReader) { def apply[A](a: Console[A]) = a.toReader }
-
+  given consoleToState as (Console ~> ConsoleState) {
+    def apply[A](a: Console[A]) = a.toState
+  }
+  given consoleToReader as (Console ~> ConsoleReader) {
+    def apply[A](a: Console[A]) = a.toReader
+  }
   /* Can interpet these as before to convert our `ConsoleIO` to a pure value that does no I/O! */
   def runConsoleReader[A](io: ConsoleIO[A]): ConsoleReader[A] =
     runFree[Console,ConsoleReader,A](io)(consoleToReader)

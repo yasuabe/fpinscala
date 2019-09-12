@@ -224,15 +224,14 @@ object SimpleStreamTransducers {
 
     import fpinscala.iomonad.Monad
 
-    def monad[I]: Monad[[X] =>> Process[I, X]] =
-      new Monad[[X] =>> Process[I, X]] {
-        def unit[O](o: => O): Process[I,O] = emit(o)
-        def flatMap[O,O2](p: Process[I,O])(f: O => Process[I,O2]): Process[I,O2] =
-          p flatMap f
-      }
+    given monad[I] as Monad[[X] =>> Process[I, X]] {
+      def unit[O](o: => O): Process[I,O] = emit(o)
+      def flatMap[O,O2](p: Process[I,O])(f: O => Process[I,O2]): Process[I,O2] =
+        p flatMap f
+    }
 
     // enable monadic syntax for `Process` type
-    given toMonadic[I, O] as Conversion[Process[I, O], Monadic[[X] =>> Process[I, X], O]] = monad[I].toMonadic(_)
+    given [I, O] as Conversion[Process[I, O], Monadic[[X] =>> Process[I, X], O]] = monad[I].toMonadic(_)
 
     /**
      * A helper function to await an element or fall back to another process

@@ -12,32 +12,32 @@ trait Monoid[A] {
 
 object Monoid {
 
-  val stringMonoid = new Monoid[String] {
+  given as Monoid[String] {
     def op(a1: String, a2: String) = a1 + a2
     val zero = ""
   }
 
-  def listMonoid[A] = new Monoid[List[A]] {
+  given [A] as Monoid[List[A]] {
     def op(a1: List[A], a2: List[A]) = a1 ++ a2
     val zero = Nil
   }
 
-  val intAddition: Monoid[Int] = new Monoid[Int] {
+  given intAddition as Monoid[Int] {
     def op(x: Int, y: Int) = x + y
     val zero = 0
   }
 
-  val intMultiplication: Monoid[Int] = new Monoid[Int] {
+  given intMultiplication as Monoid[Int] {
     def op(x: Int, y: Int) = x * y
     val zero = 1
   }
 
-  val booleanOr: Monoid[Boolean] = new Monoid[Boolean] {
+  given booleanOr as Monoid[Boolean] {
     def op(x: Boolean, y: Boolean) = x || y
     val zero = false
   }
 
-  val booleanAnd: Monoid[Boolean] = new Monoid[Boolean] {
+  given booleanAnd as Monoid[Boolean] {
     def op(x: Boolean, y: Boolean) = x && y
     val zero = true
   }
@@ -49,24 +49,24 @@ object Monoid {
   // `op` combines things in the opposite order. Monoids like `booleanOr` and
   // `intAddition` are equivalent to their duals because their `op` is commutative
   // as well as associative.
-  def optionMonoid[A]: Monoid[Option[A]] = new Monoid[Option[A]] {
+  given optionMonoid[A] as Monoid[Option[A]] {
     def op(x: Option[A], y: Option[A]) = x orElse y
     val zero = None
   }
 
   // We can get the dual of any monoid just by flipping the `op`.
-  def dual[A](m: Monoid[A]): Monoid[A] = new Monoid[A] {
+  given dual[A] as Monoid[A] given (m: Monoid[A]) {
     def (x: A) op (y: A): A = m.op(y)(x)
     val zero = m.zero
   }
 
   // Now we can have both monoids on hand
   def firstOptionMonoid[A]: Monoid[Option[A]] = optionMonoid[A]
-  def lastOptionMonoid[A]: Monoid[Option[A]] = dual(firstOptionMonoid)
+  def lastOptionMonoid[A]: Monoid[Option[A]] = dual given firstOptionMonoid
 
   // There is a choice of implementation here as well.
   // Do we implement it as `f compose g` or `f andThen g`? We have to pick one.
-  def endoMonoid[A]: Monoid[A => A] = new Monoid[A => A] {
+  given endoMonoid[A] as Monoid[A => A] {
     def op(f: A => A, g: A => A) = f compose g
     val zero = (a: A) => a
   }
@@ -87,8 +87,8 @@ object Monoid {
     forAll(gen)((a: A) =>
       (a op m.zero) == a && (m.zero op a) == a)
 
-  def concatenate[A](as: List[A], m: Monoid[A]): A =
-    as.foldLeft(m.zero)(m.op(_)(_))
+  def concatenate[A](as: List[A]) given (m: Monoid[A]): A =
+    as.foldLeft(m.zero)(_ op _)
 
   // Notice that this function does not require the use of `map` at all.
   // All we need is `foldLeft`.
@@ -104,7 +104,7 @@ object Monoid {
   // the function `f` to put the `B` on the correct side.
   // Then we have to also "flip" the monoid so that it operates from left to right.
   def foldLeft[A, B](as: List[A])(z: B)(f: (B, A) => B): B =
-    (foldMap[A, B => B](as)(a => b => f(b, a)) given dual(endoMonoid[B]))(z)
+    (foldMap[A, B => B](as)(a => b => f(b, a)) given (dual given endoMonoid[B]))(z)
 
   def foldMapV[A, B](as: IndexedSeq[A])(f: A => B) given (m: Monoid[B]): B =
     if as.length == 0 then
@@ -139,16 +139,14 @@ object Monoid {
   // This ability to 'lift' a monoid any monoid to operate within
   // some context (here `Par`) is something we'll discuss more in
   // chapters 11 & 12
-  def par[A](m: Monoid[A]): Monoid[Par[A]] = new Monoid[Par[A]] {
+  given par[A] as Monoid[Par[A]] given (m: Monoid[A]) {
     def zero = Par.unit(m.zero)
-    def op(a: Par[A], b: Par[A]) = a.map2(b)(m.op(_)(_))
+    def (a: Par[A]) op (b: Par[A]) = a.map2(b)(_ op _)
   }
 
   // we perform the mapping and the reducing both in parallel
-  def parFoldMap[A,B](v: IndexedSeq[A], m: Monoid[B])(f: A => B): Par[B] =
-    Par.parMap(v)(f).flatMap { bs =>
-      foldMapV(bs)(b => Par.lazyUnit(b)) given par(m)
-    }
+  def parFoldMap[A,B](v: IndexedSeq[A])(f: A => B) given (m: Monoid[B]): Par[B] =
+    Par.parMap(v)(f).flatMap(foldMapV(_)(Par.lazyUnit))
 
   enum WC {
     case Stub(chars: String)
@@ -156,7 +154,7 @@ object Monoid {
   }
   import WC._
 
-  val wcMonoid: Monoid[WC] = new Monoid[WC] {
+  given wcMonoid as Monoid[WC] {
     // The empty result, where we haven't seen any characters yet.
     val zero = Stub("")
 
@@ -183,27 +181,24 @@ object Monoid {
       case Part(l, w, r) => unstub(l) + w + unstub(r)
   }
 
-  def productMonoid[A,B](A: Monoid[A], B: Monoid[B]): Monoid[(A, B)] =
-    new Monoid[(A, B)] {
-      def op(x: (A, B), y: (A, B)) =
-        (A.op(x._1)(y._1), B.op(x._2)(y._2))
-      val zero = (A.zero, B.zero)
-    }
+  given productMonoid[A,B] as Monoid[(A, B)] given (A: Monoid[A], B: Monoid[B]) {
+    def (x: (A, B)) op (y: (A, B)) =
+      (A.op(x._1)(y._1), B.op(x._2)(y._2))
+    val zero = (A.zero, B.zero)
+  }
 
-  def functionMonoid[A,B] given (B: Monoid[B]): Monoid[A => B] =
-    new Monoid[A => B] {
-      def op(f: A => B, g: A => B) = (a: A) => f(a) op g(a)
-      val zero: A => B = a => B.zero
-    }
+  given functionMonoid[A,B] as Monoid[A => B] given (B: Monoid[B]) {
+    def (f: A => B) op (g: A => B) = (a: A) => f(a) op g(a)
+    val zero: A => B = a => B.zero
+  }
 
-  def mapMergeMonoid[K,V] given (V: Monoid[V]): Monoid[Map[K, V]] =
-    new Monoid[Map[K, V]] {
-      def zero = Map[K,V]()
-      def op(a: Map[K, V], b: Map[K, V]) =
-        (a.keySet ++ b.keySet).foldLeft(zero) { (acc,k) =>
-          acc.updated(k, a.getOrElse(k, V.zero) op b.getOrElse(k, V.zero))
-        }
-    }
+  given mapMergeMonoid[K,V] as Monoid[Map[K, V]] given (V: Monoid[V]) {
+    def zero = Map[K,V]()
+    def (a: Map[K, V]) op (b: Map[K, V]) =
+      (a.keySet ++ b.keySet).foldLeft(zero) { (acc,k) =>
+        acc.updated(k, a.getOrElse(k, V.zero) op b.getOrElse(k, V.zero))
+      }
+  }
 
 
   def bag[A](as: IndexedSeq[A]): Map[A, Int] =
@@ -218,13 +213,13 @@ trait Foldable[F[?]] {
     (foldMap(as)(f.curried) given endoMonoid[B])(z)
 
   def foldLeft[A,B](as: F[A])(z: B)(f: (B, A) => B): B =
-    (foldMap(as)(a => (b: B) => f(b, a)) given dual(endoMonoid[B]))(z)
+    (foldMap(as)(a => (b: B) => f(b, a)) given (dual given endoMonoid[B]))(z)
 
   def foldMap[A, B](as: F[A])(f: A => B) given (mb: Monoid[B]): B =
     foldRight(as)(mb.zero)((a, b) => f(a) op b)
 
   def concatenate[A](as: F[A]) given (m: Monoid[A]): A =
-    foldLeft(as)(m.zero)(m.op(_)(_))
+    foldLeft(as)(m.zero)(_ op _)
 
   def toList[A](as: F[A]): List[A] =
     foldRight(as)(List[A]())(_ :: _)

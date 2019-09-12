@@ -21,7 +21,7 @@ trait Functor[F[?]] {
 }
 
 object Functor {
-  val listFunctor = new Functor[List] {
+  given listFunctor as Functor[List] {
     def map[A,B](as: List[A])(f: A => B): List[B] = as map f
   }
 }
@@ -79,33 +79,33 @@ trait Monad[F[?]] extends Functor[F] {
 case class Reader[R, A](run: R => A)
 
 object Monad {
-  val genMonad = new Monad[Gen] {
+  given genMonad as Monad[Gen] {
     def unit[A](a: => A): Gen[A] = Gen.unit(a)
     override def flatMap[A,B](ma: Gen[A])(f: A => Gen[B]): Gen[B] =
       ma flatMap f
   }
 
-  val parMonad = new Monad[Par] {
+  given parMonad as Monad[Par] {
     def unit[A](a: => A) = Par.unit(a)
     override def flatMap[A,B](ma: Par[A])(f: A => Par[B]) = Par.flatMap(ma)(f)
   }
 
-  def parserMonad[P[+_]](p: Parsers[P]) = new Monad[P] {
+  given parserMonad[P[+_]] as Monad[P] given (p: Parsers[P]) {
     def unit[A](a: => A) = p.succeed(a)
     override def flatMap[A,B](ma: P[A])(f: A => P[B]) = p.flatMap(ma)(f)
   }
 
-  val optionMonad = new Monad[Option] {
+  given optionMonad as Monad[Option] {
     def unit[A](a: => A) = Some(a)
     override def flatMap[A,B](ma: Option[A])(f: A => Option[B]) = ma flatMap f
   }
 
-  val streamMonad = new Monad[LazyList] {
+  given streamMonad as Monad[LazyList] {
     def unit[A](a: => A) = LazyList(a)
     override def flatMap[A,B](ma: LazyList[A])(f: A => LazyList[B]) = ma flatMap f
   }
 
-  val listMonad = new Monad[List] {
+  given listMonad as Monad[List] {
     def unit[A](a: => A) = List(a)
     override def flatMap[A,B](ma: List[A])(f: A => List[B]) = ma flatMap f
   }
@@ -119,7 +119,7 @@ object Monad {
     type StateS[A] = State[S, A]
 
     // We can then declare the monad for the `StateS` type constructor:
-    val monad = new Monad[StateS] {
+    given monad as Monad[StateS] {
       def unit[A](a: => A): State[S, A] = State(s => (a, s))
       override def flatMap[A,B](st: State[S, A])(f: A => State[S, B]): State[S, B] =
         st flatMap f
@@ -129,13 +129,13 @@ object Monad {
   // But we don't have to create a full class like `StateMonads`. We can create
   // an anonymous class inline, inside parentheses, and project out its type member,
   // `lambda`:
-  def stateMonad[S] = new Monad[[X] =>> State[S, X]] {
+  given stateMonad[S] as Monad[[X] =>> State[S, X]] {
     def unit[A](a: => A): State[S, A] = State(s => (a, s))
     override def flatMap[A,B](st: State[S, A])(f: A => State[S, B]): State[S, B] =
       st flatMap f
   }
 
-  val idMonad = new Monad[Id] {
+  given idMonad as Monad[Id] {
     def unit[A](a: => A) = Id(a)
     override def flatMap[A,B](ida: Id[A])(f: A => Id[B]): Id[B] = ida flatMap f
   }
@@ -170,7 +170,7 @@ object Monad {
   // This means the Reader monad can override replicateM to provide a very efficient
   // implementation.
 
-  def readerMonad[R] = new Monad[[X] =>> Reader[R, X]] {
+  given readerMonad[R] as Monad[[X] =>> Reader[R, X]] {
     def unit[A](a: => A): Reader[R, A] = Reader(_ => a)
     override def flatMap[A,B](st: Reader[R, A])(f: A => Reader[R, B]): Reader[R, B] =
       Reader(r => f(st.run(r)).run(r))

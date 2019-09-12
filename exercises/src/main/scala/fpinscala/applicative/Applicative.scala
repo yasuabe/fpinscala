@@ -52,13 +52,13 @@ trait Monad[F[?]] extends Applicative[F] {
 object Monad {
   def eitherMonad[E]: Monad[[X] =>> Either[E, X]] = ???
 
-  def stateMonad[S] = new Monad[[X] =>> State[S, X]] {
+  given stateMonad[S] as Monad[[X] =>> State[S, X]] {
     def unit[A](a: => A): State[S, A] = State(s => (a, s))
     override def flatMap[A,B](st: State[S, A])(f: A => State[S, B]): State[S, B] =
       st flatMap f
   }
 
-  def composeM[F[?],N[?]] given (F: Monad[F], N: Monad[N], T: Traverse[N]):
+  def composeM[F[?],N[?]](F: Monad[F], N: Monad[N]) given (T: Traverse[N]):
     Monad[[X] =>> F[N[X]]] = ???
 }
 
@@ -70,7 +70,7 @@ import Validation._
 
 object Applicative {
 
-  val streamApplicative = new Applicative[LazyList] {
+  given streamApplicative as Applicative[LazyList] {
 
     def unit[A](a: => A): LazyList[A] =
       LazyList.continually(a) // The infinite, constant stream

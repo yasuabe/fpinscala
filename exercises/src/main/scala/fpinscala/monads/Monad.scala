@@ -21,7 +21,7 @@ trait Functor[F[?]] {
 }
 
 object Functor {
-  val listFunctor = new Functor[List] {
+  given listFunctor as Functor[List] {
     def map[A,B](as: List[A])(f: A => B): List[B] = as map f
   }
 }
@@ -55,7 +55,7 @@ trait Monad[M[?]] extends Functor[M] {
 case class Reader[R, A](run: R => A)
 
 object Monad {
-  val genMonad = new Monad[Gen] {
+  given genMonad as Monad[Gen] {
     def unit[A](a: => A): Gen[A] = Gen.unit(a)
     override def flatMap[A,B](ma: Gen[A])(f: A => Gen[B]): Gen[B] =
       ma flatMap f
@@ -84,7 +84,7 @@ case class Id[A](value: A) {
 }
 
 object Reader {
-  def readerMonad[R] = new Monad[[X] =>> Reader[R, X]] {
+  given readerMonad[R] as Monad[[X] =>> Reader[R, X]] {
     def unit[A](a: => A): Reader[R,A] = ???
     override def flatMap[A,B](st: Reader[R,A])(f: A => Reader[R,B]): Reader[R,B] = ???
   }

@@ -11,12 +11,12 @@ trait Monoid[A] {
 
 object Monoid {
 
-  val stringMonoid = new Monoid[String] {
+  given stringMonoid as Monoid[String] {
     def op(a1: String, a2: String) = a1 + a2
     val zero = ""
   }
 
-  def listMonoid[A] = new Monoid[List[A]] {
+  given listMonoid[A] as Monoid[List[A]] {
     def op(a1: List[A], a2: List[A]) = a1 ++ a2
     val zero = Nil
   }

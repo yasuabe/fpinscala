@@ -23,7 +23,7 @@ import Stream._
 case class Prop(run: (MaxSize,TestCases,RNG) => Result) {
   def &&(p: Prop) = Prop {
     (max,n,rng) => run(max,n,rng) match
-      case Right((a,n)) => p.run(max,n,rng).map { case (s,m) => (s,n+m) }
+      case Right((a, n)) => p.run(max, n, rng).map((s, m) => (s, n + m))
       case l => l
   }
   def ||(p: Prop) = Prop {
@@ -142,13 +142,13 @@ object Prop {
     unit(Executors.newCachedThreadPool) -> .25) // `a -> b` is syntax sugar for `(a,b)`
 
   def forAllPar[A](g: Gen[A])(f: A => Par[Boolean]): Prop =
-    forAll(S.map2(g)((_,_))) { case (s,a) => f(a)(s).get }
+    forAll(S.map2(g)((_,_)))((s,a) => f(a)(s).get)
 
   def checkPar(p: Par[Boolean]): Prop =
     forAllPar(Gen.unit(()))(_ => p)
 
   def forAllPar2[A](g: Gen[A])(f: A => Par[Boolean]): Prop =
-    forAll(S ** g) { case (s,a) => f(a)(s).get }
+    forAll(S ** g) ((s,a) => f(a)(s).get)
 
   def forAllPar3[A](g: Gen[A])(f: A => Par[Boolean]): Prop =
     forAll(S ** g) { case s ** a => f(a)(s).get }
@@ -299,7 +299,7 @@ object Gen {
     )
 
   def interleave[A](s1: Stream[A], s2: Stream[A]): Stream[A] =
-    s1.zipAll(s2).flatMap { case (a,a2) => Stream((a.toList ++ a2.toList): _*) }
+    s1.zipAll(s2).flatMap((a, a2) => Stream((a.toList ++ a2.toList): _*))
 
   /* The random case is simple - we generate a double and use this to choose between
    * the two random samplers. The exhaustive case is trickier if we want to try
@@ -371,7 +371,7 @@ object Gen {
 
   val sortedProp = forAll(listOf(smallInt)) { l =>
     val ls = l.sorted
-    l.isEmpty || ls.tail.isEmpty || !l.zip(ls.tail).exists { case (a,b) => a > b }
+    l.isEmpty || ls.tail.isEmpty || !l.zip(ls.tail).exists(_ > _)
   }
 
   object ** {

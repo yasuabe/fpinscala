@@ -389,7 +389,7 @@ object SimpleStreamTransducers {
      * Using zip, we can then define `mean`. Again, this definition
      * operates in a single pass.
      */
-    val mean2 = (sum zip count) |> lift { case (s,n) => s / n }
+    val mean2 = (sum zip count) |> lift(_ / _)
 
     /*
      * Exercise 6: Implement `zipWithIndex`.
@@ -1034,7 +1034,7 @@ object GeneralizedStreamTransducers {
                 val cols = (1 to ncols).map(rs.getMetaData.getColumnName)
                 (rs, cols)
             }}
-            { case (rs, cols) =>
+            { (rs, cols) =>
                 def step =
                   if !rs.next then None
                   else Some(cols.map(c => (c, rs.getObject(c): Any)).toMap)

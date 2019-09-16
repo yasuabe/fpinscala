@@ -933,7 +933,7 @@ object GeneralizedStreamTransducers {
                 val cols = (1 to ncols).map(rs.getMetaData.getColumnName)
                 (rs, cols)
             }}
-            { case (rs, cols) =>
+            { (rs, cols) =>
                 def step =
                   if !rs.next then None
                   else Some(cols.map(c => (c, rs.getObject(c): Any)).toMap)

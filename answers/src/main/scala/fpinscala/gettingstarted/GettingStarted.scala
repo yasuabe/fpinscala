@@ -148,7 +148,7 @@ object PolymorphicFunctions {
   // that they only have one implementation! Here's an example:
 
   def partial1[A,B,C](a: A, f: (A,B) => C): B => C =
-    (b: B) => f(a, b)
+    f(a, _)
 
   // Exercise 3: Implement `curry`.
 
@@ -160,8 +160,7 @@ object PolymorphicFunctions {
   // NB: The `Function2` trait has a `curried` method already
 
   // Exercise 4: Implement `uncurry`
-  def uncurry[A,B,C](f: A => B => C): (A, B) => C =
-    (a, b) => f(a)(b)
+  def uncurry[A,B,C](f: A => B => C): (A, B) => C = f(_)(_)
 
   /*
   NB: There is a method on the `Function` object in the standard library,

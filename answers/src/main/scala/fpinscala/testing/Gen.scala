@@ -53,11 +53,11 @@ object Prop {
     Stream.unfold(rng)(rng => Some(g.sample.run(rng)))
 
   def forAll[A](as: Gen[A])(f: A => Boolean): Prop = Prop {
-    (n,rng) => randomStream(as)(rng).zip(Stream.from(0)).take(n).map {
-      case (a, i) => try
-                        if f(a) then Passed else Falsified(a.toString, i)
-                      catch
-                        case e: Exception => Falsified(buildMsg(a, e), i)
+    (n,rng) => randomStream(as)(rng).zip(Stream.from(0)).take(n).map { (a, i) =>
+      try
+        if f(a) then Passed else Falsified(a.toString, i)
+      catch
+        case e: Exception => Falsified(buildMsg(a, e), i)
     }.find(_.isFalsified).getOrElse(Passed)
   }
 
@@ -129,13 +129,13 @@ object Prop {
     unit(Executors.newCachedThreadPool) -> .25) // `a -> b` is syntax sugar for `(a,b)`
 
   def forAllPar[A](g: Gen[A])(f: A => Par[Boolean]): Prop =
-    forAll(S.map2(g)((_,_))) { case (s,a) => f(a)(s).get }
+    forAll(S.map2(g)((_,_)))((s, a) => f(a)(s).get)
 
   def checkPar(p: Par[Boolean]): Prop =
     forAllPar(Gen.unit(()))(_ => p)
 
   def forAllPar2[A](g: Gen[A])(f: A => Par[Boolean]): Prop =
-    forAll(S ** g) { case (s,a) => f(a)(s).get }
+    forAll(S ** g)((s,a) => f(a)(s).get)
 
   def forAllPar3[A](g: Gen[A])(f: A => Par[Boolean]): Prop =
     forAll(S ** g) { case s ** a => f(a)(s).get }
@@ -253,7 +253,7 @@ object Gen {
   // or has no two consecutive elements `(a,b)` such that `a` is greater than `b`.
   val sortedProp = forAll(listOf(smallInt)) { l =>
     val ls = l.sorted
-    l.isEmpty || ls.tail.isEmpty || !ls.zip(ls.tail).exists { case (a,b) => a > b }
+    l.isEmpty || ls.tail.isEmpty || !ls.zip(ls.tail).exists(_ > _)
   }
 
   object ** {

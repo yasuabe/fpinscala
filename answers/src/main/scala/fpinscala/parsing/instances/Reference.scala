@@ -7,7 +7,7 @@ import scala.util.matching.Regex
 object ReferenceTypes {
 
   /** A parser is a kind of state action that can fail. */
-  type Parser[+A] = ParseState => Result[A]
+  type Parser[+A] = given ParseState => Result[A]
 
   /** `ParseState` wraps a `Location` and provides some extra
     * convenience functions. The sliceable parsers defined
@@ -69,59 +69,51 @@ object Reference extends Parsers[Parser] {
 
   def run[A](p: Parser[A])(s: String): Either[ParseError,A] = {
     val s0 = ParseState(Location(s))
-    p(s0).extract
+    (p given s0).extract
   }
 
   // consume no characters and succeed with the given value
-  def succeed[A](a: A): Parser[A] = s => Success(a, 0)
+  def succeed[A](a: A): Parser[A] = Success(a, 0)
 
   def or[A](p: Parser[A], p2: => Parser[A]): Parser[A] =
-    s => p(s) match
-      case Failure(e,false) => p2(s)
+    p match
+      case Failure(e,false) => p2
       case r => r // committed failure or success skips running `p2`
 
-  def flatMap[A,B](f: Parser[A])(g: A => Parser[B]): Parser[B] =
-    s => f(s) match
-      case Success(a,n) => g(a)(s.advanceBy(n))
-                           .addCommit(n != 0)
-                           .advanceSuccess(n)
-      case f@Failure(_,_) => f.asInstanceOf[Result[B]]
+  def flatMap[A,B](f: Parser[A])(g: A => Parser[B]): Parser[B] = f match
+    case Success(a, n)   => (g(a) given the[ParseState].advanceBy(n))
+                              .addCommit(n != 0)
+                              .advanceSuccess(n)
+    case f@Failure(_, _) => f.asInstanceOf[Result[B]]
 
-  def string(w: String): Parser[String] = {
-    val msg = "'" + w + "'"
-    s => {
-      val i = firstNonmatchingIndex(s.loc.input, w, s.loc.offset)
-      if (i == -1) // they matched
-        Success(w, w.length)
-      else
-        Failure(s.loc.advanceBy(i).toError(msg), i != 0)
-    }
-  }
+  def string(w: String): Parser[String] =
+    val s = the[ParseState]
+    val i = firstNonmatchingIndex(s.loc.input, w, s.loc.offset)
+    if (i == -1) Success(w, w.length) // they matched
+    else         Failure(s.loc.advanceBy(i).toError("'" + w + "'"), i != 0)
 
   /* note, regex matching is 'all-or-nothing':
    * failures are uncommitted */
-  def regex(r: Regex): Parser[String] = {
-    val msg = "regex " + r
-    s => r.findPrefixOf(s.input) match
-      case None => Failure(s.loc.toError(msg), false)
+  def regex(r: Regex): Parser[String] =
+    r.findPrefixOf(the[ParseState].input) match
       case Some(m) => Success(m,m.length)
-  }
+      case None    => Failure(the[ParseState].loc.toError("regex " + r), false)
 
   def scope[A](msg: String)(p: Parser[A]): Parser[A] =
-    s => p(s).mapError(_.push(s.loc,msg))
+    p.mapError(_.push(the[ParseState].loc,msg))
 
   def label[A](msg: String)(p: Parser[A]): Parser[A] =
-    s => p(s).mapError(_.label(msg))
+    p.mapError(_.label(msg))
 
   def fail[A](msg: String): Parser[A] =
-    s => Failure(s.loc.toError(msg), true)
+    Failure(the[ParseState].loc.toError(msg), true)
 
   def attempt[A](p: Parser[A]): Parser[A] =
-    s => p(s).uncommit
+    p.uncommit
 
   def slice[A](p: Parser[A]): Parser[String] =
-    s => p(s) match
-      case Success(_,n) => Success(s.slice(n),n)
+    p match
+      case Success(_,n)    => Success(the[ParseState].slice(n),n)
       case f@Failure(a, b) => f.asInstanceOf[Result[String]]
 
   /* We provide an overridden version of `many` that accumulates
@@ -129,11 +121,11 @@ object Reference extends Parsers[Parser] {
    * stack overflow errors for most grammars.
    */
   override def many[A](p: Parser[A]): Parser[List[A]] =
-    s => {
+    {
       var nConsumed: Int = 0
       val buf = collection.mutable.ListBuffer[A]()
       def go(p: Parser[A], offset: Int): Result[List[A]] = {
-        p(s.advanceBy(offset)) match
+        (p given the[ParseState].advanceBy(offset)) match
           case Success(a,n) => buf += a; go(p, offset+n)
           case f@Failure(e,true) => f.asInstanceOf[Result[List[A]]]
           case Failure(e,_) => Success(buf.toList,offset)

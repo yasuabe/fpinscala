@@ -73,7 +73,7 @@ object JSONExample extends App {
   def printResult[E](e: Either[E,JSON]) =
     e.fold(println, println)
 
-  val json: Parser[JSON] = JSON.jsonParser(P)
+  val json: Parser[JSON] = JSON.jsonParser[Parser](P)
   printResult { P.run(json)(jsonTxt) }
   println("--")
   printResult { P.run(json)(malformedJson1) }

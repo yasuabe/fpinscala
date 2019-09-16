@@ -25,7 +25,7 @@ object SliceableTypes {
    * a `slice` combinator, the `isSliced` field of `ParseState` will
    * be `true`, and we return a `Slice` output.
    */
-  type Parser[+A] = ParseState => Result[A]
+  type Parser[+A] = given ParseState => Result[A]
 
   /** `isSliced` indicates if the current parser is surround by a
     * `slice` combinator. This lets us avoid building up values that
@@ -111,16 +111,15 @@ object Sliceable extends Parsers[Parser] {
 
   def run[A](p: Parser[A])(s: String): Either[ParseError,A] = {
     val s0 = ParseState(Location(s), false)
-    p(s0).extract(s)
+    (p given s0).extract(s)
   }
 
   // consume no characters and succeed with the given value
-  def succeed[A](a: A): Parser[A] = s => Success(a, 0)
+  def succeed[A](a: A): Parser[A] = Success(a, 0)
 
-  def or[A](p: Parser[A], p2: => Parser[A]): Parser[A] =
-    s => p(s) match
-      case Failure(e,false) => p2(s)
-      case r => r // committed failure or success skips running `p2`
+  def or[A](p: Parser[A], p2: => Parser[A]): Parser[A] = p match
+    case Failure(e,false) => p2
+    case r                => r // committed failure or success skips running `p2`
 
   /*
    * `Result` is an example of a Generalized Algebraic Data Type (GADT),
@@ -139,9 +138,9 @@ object Sliceable extends Parsers[Parser] {
    * `A` which is known to be `String`. We resort to a cast here.
    */
   override def map[A,B](p: Parser[A])(f: A => B): Parser[B] =
-    s => p(s) match
-      case Success(a,n) => Success(f(a),n)
-      case Slice(n) => Success(f(s.slice(n).asInstanceOf[A]),n)
+    p match
+      case Success(a,n)   => Success(f(a),n)
+      case Slice(n)       => Success(f(the[ParseState].slice(n).asInstanceOf[A]),n)
       case f@Failure(_,_) => f
 
   /* See this gist for more information, examples, and discussion
@@ -163,68 +162,62 @@ object Sliceable extends Parsers[Parser] {
    * Again, note the cast needed.
    */
   def flatMap[A,B](f: Parser[A])(g: A => Parser[B]): Parser[B] =
-    s => f(s.unslice) match
-      case Success(a,n) =>
-        g(a)(s.advanceBy(n).reslice(s))
-        .addCommit(n != 0)
-        .advanceSuccess(n)
-      case Slice(n) => g(s.slice(n).asInstanceOf[A])(s.advanceBy(n).reslice(s))
-                       .advanceSuccess(n)
+    val s = the[ParseState]
+    (f given s.unslice) match
+      case Success(a,n)   => (g(a) given s.advanceBy(n).reslice(s))
+                               .addCommit(n != 0)
+                               .advanceSuccess(n)
+      case Slice(n)       => (g(s.slice(n)) given s.advanceBy(n).reslice(s))
+                               .advanceSuccess(n)
       case f@Failure(_,_) => f
 
   // other functions are quite similar to impls in `Reference.scala`
 
-  def string(w: String): Parser[String] = {
-    val msg = "'" + w + "'"
-    s => {
-      val i = firstNonmatchingIndex(s.loc.input, w, s.loc.offset)
-      if (i == -1) { // they matched
-        if s.isSliced then Slice(w.length)
-        else               Success(w, w.length)
-      }
-      else
-        Failure(s.loc.advanceBy(i).toError(msg), i != 0)
-    }
-  }
+  def string(w: String): Parser[String] =
+    val s = the[ParseState]
+    val i = firstNonmatchingIndex(s.loc.input, w, s.loc.offset)
+    if (i == -1) { // they matched
+      if s.isSliced then Slice(w.length) else Success(w, w.length)
+    } else
+      Failure(s.loc.advanceBy(i).toError("'" + w + "'"), i != 0)
 
   // note, regex matching is 'all-or-nothing' - failures are
   // uncommitted
-  def regex(r: Regex): Parser[String] = {
+  def regex(r: Regex): Parser[String] =
+    val s   = the[ParseState]
     val msg = "regex " + r
-    s => r.findPrefixOf(s.input) match
-      case None => Failure(s.loc.toError(msg), false)
-      case Some(m) =>
-        if s.isSliced then Slice(m.length)
-        else               Success(m,m.length)
-  }
+    r.findPrefixOf(s.input) match
+      case None    => Failure(s.loc.toError(msg), false)
+      case Some(m) => if s.isSliced then Slice(m.length) else Success(m,m.length)
 
   def scope[A](msg: String)(p: Parser[A]): Parser[A] =
-    s => p(s).mapError(_.push(s.loc,msg))
+    p.mapError(_.push(the[ParseState].loc,msg))
 
   def label[A](msg: String)(p: Parser[A]): Parser[A] =
-    s => p(s).mapError(_.label(msg))
+    p.mapError(_.label(msg))
 
   def fail[A](msg: String): Parser[A] =
-    s => Failure(s.loc.toError(msg), true)
+    Failure(the[ParseState].loc.toError(msg), true)
 
   def attempt[A](p: Parser[A]): Parser[A] =
-    s => p(s).uncommit
+    p.uncommit
 
   def slice[A](p: Parser[A]): Parser[String] =
-    s => p(s.copy(isSliced = true)).slice
+    (p given the[ParseState].copy(isSliced = true)).slice
 
   /* As with `map`, we require casts in a few places. */
   override def map2[A,B,C](p: Parser[A], p2: => Parser[B])(f: (A,B) => C): Parser[C] =
-    s => p(s) match
-      case Success(a,n) => val s2 = s.advanceBy(n); p2(s2) match
+    val s = the[ParseState]
+    p match
+      case Success(a,n) => val s2 = s.advanceBy(n); (p2 given s2) match
         case Success(b,m) => Success(f(a,b),n+m)
-        case Slice(m) => Success(f(a,s2.slice(m).asInstanceOf[B]), n+m)
+        case Slice(m) => Success(f(a,s2.slice(m).asInstanceOf[B]), n + m)
         case f@Failure(_,_) => f
-      case Slice(n) => val s2 = s.advanceBy(n); p2(s2) match
-        case Success(b,m) => Success(f(s.slice(n).asInstanceOf[A],b),n+m)
+      case Slice(n) => val s2 = s.advanceBy(n); (p2 given s2) match
+        case Success(b,m) => Success(f(s.slice(n).asInstanceOf[A],b),n + m)
         case Slice(m) =>
-          if s.isSliced then Slice(n+m).asInstanceOf[Result[C]]
-          else Success(f(s.slice(n).asInstanceOf[A],s2.slice(m).asInstanceOf[B]), n+m)
+          if s.isSliced then Slice(n + m).asInstanceOf[Result[C]]
+          else Success(f(s.slice(n).asInstanceOf[A],s2.slice(m).asInstanceOf[B]), n + m)
         case f@Failure(_,_) => f
       case f@Failure(_,_) => f
 
@@ -236,29 +229,29 @@ object Sliceable extends Parsers[Parser] {
    * stack overflow errors.
    */
   override def many[A](p: Parser[A]): Parser[List[A]] =
-    s => {
+    {
+      val s = the[ParseState]
       var nConsumed: Int = 0
       if (s.isSliced) {
         def go(p: Parser[String], offset: Int): Result[String] =
-          p(s.advanceBy(offset)) match
-            case f@Failure(e,true) => f
-            case Failure(e,_) => Slice(offset)
-            case Slice(n) => go(p, offset+n)
-            case Success(_,_) => sys.error("sliced parser should not return success, only slice")
+          (p given s.advanceBy(offset)) match
+            case f@Failure(e, true) => f
+            case Failure(e, _) => Slice(offset)
+            case Slice(n)      => go(p, offset + n)
+            case Success(_, _) => sys.error("sliced parser should not return success, only slice")
 
         go(p.slice, 0).asInstanceOf[Result[List[A]]]
       }
       else
         val buf = collection.mutable.ListBuffer[A]()
         def go(p: Parser[A], offset: Int): Result[List[A]] = {
-          p(s.advanceBy(offset)) match
-            case Success(a,n) => buf += a; go(p, offset+n)
-            case f@Failure(e,true) => f
-            case Failure(e,_) => Success(buf.toList,offset)
-            case Slice(n) =>
-              buf += s.input.substring(offset,offset+n).
-                     asInstanceOf[A]
-              go(p, offset+n)
+          (p given s.advanceBy(offset)) match
+            case Success(a, n)      => buf += a; go(p, offset + n)
+            case f@Failure(e, true) => f
+            case Failure(e, _)      => Success(buf.toList,offset)
+            case Slice(n)           =>
+              buf += s.input.substring(offset, offset + n).asInstanceOf[A]
+              go(p, offset + n)
         }
         go(p, 0)
     }

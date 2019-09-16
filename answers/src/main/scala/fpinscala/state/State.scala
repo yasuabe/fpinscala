@@ -21,15 +21,15 @@ object RNG {
   // Since `Int.Minvalue` is 1 smaller than `-(Int.MaxValue)`,
   // it suffices to increment the negative numbers by 1 and make them positive.
   // This maps Int.MinValue to Int.MaxValue and -1 to 0.
-  def nonNegativeInt(rng: RNG): (Int, RNG) = {
+  def nonNegativeInt given (rng: RNG): (Int, RNG) = {
     val (i, r) = rng.nextInt
     (if i < 0 then -(i + 1) else i, r)
   }
 
   // We generate an integer >= 0 and divide it by one higher than the
   // maximum. This is just one possible solution.
-  def double(rng: RNG): (Double, RNG) = {
-    val (i, r) = nonNegativeInt(rng)
+  def double given (rng: RNG): (Double, RNG) = {
+    val (i, r) = nonNegativeInt
     (i / (Int.MaxValue.toDouble + 1), r)
   }
 
@@ -38,7 +38,7 @@ object RNG {
 
   def intDouble(rng: RNG): ((Int, Double), RNG) = {
     val (i, r1) = rng.nextInt
-    val (d, r2) = double(r1)
+    val (d, r2) = double given r1
     ((i, d), r2)
   }
 
@@ -48,9 +48,9 @@ object RNG {
   }
 
   def double3(rng: RNG): ((Double, Double, Double), RNG) = {
-    val (d1, r1) = double(rng)
-    val (d2, r2) = double(r1)
-    val (d3, r3) = double(r2)
+    val (d1, r1) = double given rng
+    val (d2, r2) = double given r1
+    val (d3, r3) = double given r2
     ((d1, d2, d3), r3)
   }
 
@@ -78,16 +78,15 @@ object RNG {
     go(count, rng, List())
   }
 
-  type Rand[+A] = RNG => (A, RNG)
+  type Rand[+A] = given RNG => (A, RNG)
 
-  val int: Rand[Int] = _.nextInt
+  val int: Rand[Int] = the[RNG].nextInt
 
-  def unit[A](a: A): Rand[A] =
-    rng => (a, rng)
+  def unit[A](a: A): Rand[A] = (a, the[RNG])
 
   def map[A,B](s: Rand[A])(f: A => B): Rand[B] =
-    rng => {
-      val (a, rng2) = s(rng)
+    {
+      val (a, rng2) = s
       (f(a), rng2)
     }
 
@@ -103,9 +102,9 @@ object RNG {
   // like this, it's important to consider how we would test them for
   // correctness.
   def map2[A,B,C](ra: Rand[A], rb: Rand[B])(f: (A, B) => C): Rand[C] =
-    rng => {
-      val (a, r1) = ra(rng)
-      val (b, r2) = rb(r1)
+    {
+      val (a, r1) = ra
+      val (b, r2) = rb given r1
       (f(a, b), r2)
     }
 
@@ -138,9 +137,9 @@ object RNG {
     sequence(List.fill(count)(int))
 
   def flatMap[A,B](f: Rand[A])(g: A => Rand[B]): Rand[B] =
-    rng => {
-      val (a, r1) = f(rng)
-      g(a)(r1) // We pass the new state along
+    {
+      val (a, r1) = f
+      g(a) given r1 // We pass the new state along
     }
 
   def nonNegativeLessThan(n: Int): Rand[Int] = {

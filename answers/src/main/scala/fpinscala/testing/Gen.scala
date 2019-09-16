@@ -182,15 +182,15 @@ object Gen {
     Gen(State(RNG.boolean))
 
   def choose(start: Int, stopExclusive: Int): Gen[Int] =
-    Gen(State(RNG.nonNegativeInt).map(n => start + n % (stopExclusive-start)))
+    Gen(State((r: RNG) => RNG.nonNegativeInt given r).map(start + _ % (stopExclusive - start)))
 
   def listOfN[A](n: Int, g: Gen[A]): Gen[List[A]] =
     Gen(State.sequence(List.fill(n)(g.sample)))
 
-  val uniform: Gen[Double] = Gen(State(RNG.double))
+  val uniform: Gen[Double] = Gen(State((r: RNG) => RNG.double given r))
 
   def choose(i: Double, j: Double): Gen[Double] =
-    Gen(State(RNG.double).map(d => i + d*(j-i)))
+    Gen(State((r: RNG) => RNG.double given r).map(i + _ * (j - i)))
 
   /* Basic idea is to add 1 to the result of `choose` if it is of the wrong
    * parity, but we require some special handling to deal with the maximum
@@ -219,7 +219,7 @@ object Gen {
     /* The probability we should pull from `g1`. */
     val g1Threshold = g1._2.abs / (g1._2.abs + g2._2.abs)
 
-    Gen(State(RNG.double).flatMap(d => if d < g1Threshold then g1._1.sample else g2._1.sample))
+    Gen(State((r: RNG) => RNG.double given r).flatMap(d => if d < g1Threshold then g1._1.sample else g2._1.sample))
   }
 
   def listOf[A](g: Gen[A]): SGen[List[A]] =

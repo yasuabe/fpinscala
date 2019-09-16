@@ -17,16 +17,15 @@ object RNG {
     }
   }
 
-  type Rand[+A] = RNG => (A, RNG)
+  type Rand[+A] = given RNG => (A, RNG)
 
-  val int: Rand[Int] = _.nextInt
+  val int: Rand[Int] = the[RNG].nextInt
 
-  def unit[A](a: A): Rand[A] =
-    rng => (a, rng)
+  def unit[A](a: A): Rand[A] = (a, the[RNG])
 
   def map[A,B](s: Rand[A])(f: A => B): Rand[B] =
-    rng => {
-      val (a, rng2) = s(rng)
+    {
+      val (a, rng2) = s
       (f(a), rng2)
     }
 

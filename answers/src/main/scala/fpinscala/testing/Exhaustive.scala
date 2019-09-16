@@ -216,7 +216,7 @@ object Gen {
     Gen(State(RNG.boolean), bounded(Stream(true,false)))
 
   def choose(start: Int, stopExclusive: Int): Gen[Int] =
-    Gen(State(RNG.nonNegativeInt).map(n => start + n % (stopExclusive-start)),
+    Gen(State((a: RNG) => RNG.nonNegativeInt given a) map (start + _ % (stopExclusive - start)),
         bounded(Stream.from(start).take(stopExclusive-start)))
 
   /* This implementation is rather tricky, but almost impossible to get wrong
@@ -259,10 +259,10 @@ object Gen {
    * `Stream(None)` in our current representation of `exhaustive`.
    */
   def uniform: Gen[Double] =
-    Gen(State(RNG.double), unbounded)
+    Gen(State(r => RNG.double given r), unbounded)
 
   def choose(i: Double, j: Double): Gen[Double] =
-    Gen(State(RNG.double).map(d => i + d*(j-i)), unbounded)
+    Gen(State((r: RNG) => RNG.double given r).map(i + _ * (j - i)), unbounded)
 
   /* Basic idea is add 1 to the result of `choose` if it is of the wrong
    * parity, but we require some special handling to deal with the maximum
@@ -315,7 +315,7 @@ object Gen {
     def bools: Stream[Boolean] =
       randomStream(uniform.map(_ < g1Threshold))(RNG.Simple(302837L))
 
-    Gen(State(RNG.double).flatMap(d => if d < g1Threshold then g1._1.sample else g2._1.sample),
+    Gen(State((r: RNG) => RNG.double given r).flatMap(d => if d < g1Threshold then g1._1.sample else g2._1.sample),
         interleave(bools, g1._1.exhaustive, g2._1.exhaustive))
   }
 

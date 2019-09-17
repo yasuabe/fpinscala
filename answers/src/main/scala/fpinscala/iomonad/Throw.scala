@@ -33,19 +33,19 @@ object Throw extends Monad[Throw] {
     throw Call(a, f)
 
   /* Central evaluation loop. */
-  def ap[A,B](a: A)(f: A => B): B = {
+  def ap[A,B](a: A)(f: A => B): B =
     var ai: Any = a
     var fi: Any => Any = f.asInstanceOf[Any => Any]
     while true do
       try return fi(ai).asInstanceOf[B]
-      catch { case Call(a2, f2) => ai = a2; fi = f2.asInstanceOf[Any => Any] } // TODO
+      catch
+        case Call(a2, f2) => ai = a2; fi = f2.asInstanceOf[Any => Any] // TODO
 
     null.asInstanceOf[B] // unreachable
-  }
 
   /* Convenience function for forcing a thunk. */
   def force[A](f: () => A): A =
-    ap(f)(f => f())
+    ap(f)(_())
 
   def more[A](a: => Throw[A]): Throw[A] = More(() => a)
 

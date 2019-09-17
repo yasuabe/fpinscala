@@ -14,13 +14,12 @@ object Nonblocking {
 
   object Par {
 
-    def run[A](p: Par[A]) given (es: ExecutorService): A = {
+    def run[A](p: Par[A]) given (es: ExecutorService): A =
       val ref   = java.util.concurrent.atomic.AtomicReference[A] // A mutable, threadsafe reference, to use for storing the result
       val latch = CountDownLatch(1) // A latch which, when decremented, implies that `ref` has the result
       p(es) { a => ref.set(a); latch.countDown } // Asynchronously set the result, and decrement the latch
       latch.await // Block until the `latch.countDown` is invoked asynchronously
       ref.get // Once we've passed the latch, we know `ref` has been set, and return its value
-    }
 
     def unit[A](a: A): Par[A] =
       es => new Future[A] {
@@ -58,7 +57,7 @@ object Nonblocking {
 
     def map2[A,B,C](p: Par[A], p2: Par[B])(f: (A,B) => C): Par[C] =
       es => new Future[C] {
-        def apply(cb: C => Unit): Unit = {
+        def apply(cb: C => Unit): Unit =
           var ar: Option[A] = None
           var br: Option[B] = None
           // this implementation is a little too liberal in forking of threads -
@@ -74,7 +73,6 @@ object Nonblocking {
           }
           p(es)(a => combiner ! Left(a))
           p2(es)(b => combiner ! Right(b))
-        }
       }
 
     // specialized version of `map`

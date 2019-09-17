@@ -36,18 +36,16 @@ object IO0 {
     (f - 32) * 5.0/9.0
 
   // Ordinary code with side effects
-  def converter: Unit = {
+  def converter: Unit =
     println("Enter a temperature in degrees Fahrenheit: ")
     val d = readLine.toDouble
     println(fahrenheitToCelsius(d))
-  }
 
   // A pure version is not possible!
   /*
-  def converter: IO = {
+  def converter: IO =
     val prompt: IO = PrintLine("Enter a temperature in degrees fahrenheit: ")
     // now what ???
-  }
   */
 }
 
@@ -229,18 +227,14 @@ object IO2aTests {
   val f: Int => IO[Int] = (i: Int) => Return(i)
 
   val g: Int => IO[Int] =
-    List.fill(10000)(f).foldLeft(f){
-      (a: Function1[Int, IO[Int]],
-        b: Function1[Int, IO[Int]]) => {
-        (x: Int) => IO.suspend(a(x).flatMap(b))
-      }
+    List.fill(10000)(f).foldLeft(f) {
+      (a, b) => x => IO.suspend(a(x).flatMap(b))
     }
 
-  def main(args: Array[String]): Unit = {
+  def main(args: Array[String]): Unit =
     val gFortyTwo = g(42)
     println("g(42) = " + gFortyTwo)
     println("run(g(42)) = " + run(gFortyTwo))
-  }
 }
 
 
@@ -287,18 +281,14 @@ object IO2bTests {
   val f: Int => TailRec[Int] = (i: Int) => Return(i)
 
   val g: Int => TailRec[Int] =
-    List.fill(10000)(f).foldLeft(f){
-      (a: Function1[Int, TailRec[Int]],
-        b: Function1[Int, TailRec[Int]]) => {
-        (x: Int) => TailRec.suspend(a(x).flatMap(b))
-      }
+    List.fill(10000)(f).foldLeft(f) {
+      (a, b) => x => TailRec.suspend(a(x).flatMap(b))
     }
 
-  def main(args: Array[String]): Unit = {
+  def main(args: Array[String]): Unit =
     val gFortyTwo = g(42)
     println("g(42) = " + gFortyTwo)
     println("run(g(42)) = " + run(gFortyTwo))
-  }
 }
 
 object IO2c {

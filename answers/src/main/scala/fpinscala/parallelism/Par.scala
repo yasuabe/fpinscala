@@ -48,10 +48,9 @@ object Par {
   // a right-nested parallel program, and we can get better performance by
   // dividing the list in half, and running both halves in parallel.
   // See `sequenceBalanced` below.
-  def sequenceRight[A](as: List[Par[A]]): Par[List[A]] =
-    as match
-      case Nil => unit(Nil)
-      case h :: t => map2(h, fork(sequenceRight(t)))(_ :: _)
+  def sequenceRight[A](as: List[Par[A]]): Par[List[A]] = as match
+    case Nil    => unit(Nil)
+    case h :: t => map2(h, fork(sequenceRight(t)))(_ :: _)
 
   // We define `sequenceBalanced` using `IndexedSeq`, which provides an
   // efficient function for splitting the sequence in half.
@@ -66,11 +65,10 @@ object Par {
   def sequence[A](as: List[Par[A]]): Par[List[A]] =
     map(sequenceBalanced(as.toIndexedSeq))(_.toList)
 
-  def parFilter[A](l: List[A])(f: A => Boolean): Par[List[A]] = {
+  def parFilter[A](l: List[A])(f: A => Boolean): Par[List[A]] =
     val pars: List[Par[List[A]]] =
       l map (asyncF(a => if f(a) then List(a) else List()))
     map(sequence(pars))(_.flatten) // convenience method on `List` for concatenating a list of lists
-  }
 
   def equal[A](e: ExecutorService)(p: Par[A], p2: Par[A]): Boolean =
     p(e).get == p2(e).get
@@ -78,38 +76,29 @@ object Par {
   def delay[A](fa: => Par[A]): Par[A] =
     es => fa(es)
 
-  def choice[A](cond: Par[Boolean])(t: Par[A], f: Par[A]): Par[A] =
-    es =>
-      if run(es)(cond).get then t(es) // Notice we are blocking on the result of `cond`.
-      else f(es)
+  def choice[A](cond: Par[Boolean])(t: Par[A], f: Par[A]): Par[A] = es => 
+    // Notice we are blocking on the result of `cond`.
+    if run(es)(cond).get then t(es) else f(es)
 
-  def choiceN[A](n: Par[Int])(choices: List[Par[A]]): Par[A] =
-    es => {
-      val ind = run(es)(n).get // Full source files
-      run(es)(choices(ind))
-    }
+  def choiceN[A](n: Par[Int])(choices: List[Par[A]]): Par[A] = es =>
+    val ind = run(es)(n).get // Full source files
+    run(es)(choices(ind))
 
   def choiceViaChoiceN[A](a: Par[Boolean])(ifTrue: Par[A], ifFalse: Par[A]): Par[A] =
     choiceN(map(a)(if _ then 0 else 1))(List(ifTrue, ifFalse))
 
-  def choiceMap[K,V](key: Par[K])(choices: Map[K,Par[V]]): Par[V] =
-    es => {
-      val k = run(es)(key).get
-      run(es)(choices(k))
-    }
+  def choiceMap[K,V](key: Par[K])(choices: Map[K, Par[V]]): Par[V] = es =>
+    val k = run(es)(key).get
+    run(es)(choices(k))
 
-  def chooser[A,B](p: Par[A])(choices: A => Par[B]): Par[B] =
-    es => {
-      val k = run(es)(p).get
-      run(es)(choices(k))
-    }
+  def chooser[A,B](p: Par[A])(choices: A => Par[B]): Par[B] = es =>
+    val k = run(es)(p).get
+    run(es)(choices(k))
 
   /* `chooser` is usually called `flatMap` or `bind`. */
-  def flatMap[A,B](p: Par[A])(choices: A => Par[B]): Par[B] =
-    es => {
-      val k = run(es)(p).get
-      run(es)(choices(k))
-    }
+  def flatMap[A,B](p: Par[A])(choices: A => Par[B]): Par[B] = es =>
+    val k = run(es)(p).get
+    run(es)(choices(k))
 
   def choiceViaFlatMap[A](p: Par[Boolean])(f: Par[A], t: Par[A]): Par[A] =
     flatMap(p)(if _ then t else f)

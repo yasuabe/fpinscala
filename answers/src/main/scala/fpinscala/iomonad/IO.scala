@@ -36,18 +36,16 @@ object IO0 {
     (f - 32) * 5.0/9.0
 
   // Ordinary code with side effects
-  def converter: Unit = {
+  def converter: Unit =
     println("Enter a temperature in degrees Fahrenheit: ")
     val d = readLine.toDouble
     println(fahrenheitToCelsius(d))
-  }
 
   // A pure version is not possible!
   /*
-  def converter: IO = {
+  def converter: IO =
     val prompt: IO = PrintLine("Enter a temperature in degrees fahrenheit: ")
     // now what ???
-  }
   */
 }
 
@@ -136,23 +134,21 @@ object IO1 {
   | <anything else> - bomb with horrible error
   """.trim.stripMargin
 
-  def factorial(n: Int): IO[Int] = {
+  def factorial(n: Int): IO[Int] =
     for
-      acc <- ref(1)
-      _ <- foreachM ((1 to n) to LazyList) (i => acc.modify(_ * i).skip)
+      acc    <- ref(1)
+      _      <- foreachM ((1 to n) to LazyList) (i => acc.modify(_ * i).skip)
       result <- acc.get
     yield result
-  }
 
   val factorialREPL: IO[Unit] = sequence_(
-    IO { println(helpstring) },
-    doWhile { IO { readLine } } { line =>
-      val ok = line != "q"
-      when (ok) { for
+    IO(println(helpstring)),
+    doWhile(IO(readLine))(line =>
+      when (line != "q")( for
         n <- factorial(line.toInt)
-        _ <- IO { println("factorial: " + n) }
-      yield () }
-    }
+        _ <- IO(println("factorial: " + n))
+      yield ())
+    )
   )
 }
 
@@ -239,11 +235,10 @@ object IO2aTests {
       }
     }
 
-  def main(args: Array[String]): Unit = {
+  def main(args: Array[String]): Unit =
     val gFortyTwo = g(42)
     println("g(42) = " + gFortyTwo)
     println("run(g(42)) = " + run(gFortyTwo))
-  }
 }
 
 
@@ -300,11 +295,10 @@ object IO2bTests {
       }
     }
 
-  def main(args: Array[String]): Unit = {
+  def main(args: Array[String]): Unit =
     val gFortyTwo = g(42)
     println("g(42) = " + gFortyTwo)
     println("run(g(42)) = " + run(gFortyTwo))
-  }
 }
 
 
@@ -508,18 +502,17 @@ object IO3 {
   // Exercise 4 (optional, hard): Implement `runConsole` using `runFree`,
   // without going through `Par`. Hint: define `translate` using `runFree`.
 
-  def translate[F[?],G[?],A](f: Free[F,A])(fg: F ~> G): Free[G,A] = {
+  def translate[F[?],G[?],A](f: Free[F,A])(fg: F ~> G): Free[G,A] =
     type FreeG[A] = Free[G,A]
     val t = new (F ~> FreeG) {
-      def apply[A](a: F[A]): Free[G,A] = Suspend { fg(a) }
+      def apply[A](a: F[A]): Free[G,A] = Suspend(fg(a))
     }
     runFree(f)(t) given freeMonad[G]
-  }
 
   def runConsole[A](a: Free[Console,A]): A =
-    runTrampoline { translate(a)(new (Console ~> Function0) {
+    runTrampoline(translate(a)(new (Console ~> Function0) {
       def apply[A](c: Console[A]) = c.toThunk
-    })}
+    }))
 
 
   /*
@@ -611,11 +604,10 @@ object IO3 {
     Par.async { (cb: Either[Throwable, Array[Byte]] => Unit) =>
       val buf = ByteBuffer.allocate(numBytes)
       file.read(buf, fromPosition, (), new CompletionHandler[Integer, Unit] {
-        def completed(bytesRead: Integer, ignore: Unit) = {
+        def completed(bytesRead: Integer, ignore: Unit) =
           val arr = new Array[Byte](bytesRead)
           buf.slice.get(arr, 0, bytesRead)
           cb(Right(arr))
-        }
         def failed(err: Throwable, ignore: Unit) =
           cb(Left(err))
       })

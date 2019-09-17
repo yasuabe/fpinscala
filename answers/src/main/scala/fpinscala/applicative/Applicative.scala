@@ -45,13 +45,12 @@ trait Applicative[F[?]] extends Functor[F] { self =>
   def factor[A,B](fa: F[A], fb: F[B]): F[(A,B)] =
     map2(fa, fb)((_,_))
 
-  def product[G[?]](G: Applicative[G]): Applicative[[X] =>> (F[X], G[X])] = {
+  def product[G[?]](G: Applicative[G]): Applicative[[X] =>> (F[X], G[X])] =
     new Applicative[[X] =>> (F[X], G[X])] {
       def unit[A](a: => A) = (self.unit(a), G.unit(a))
       override def apply[A,B](fs: (F[A => B], G[A => B]))(p: (F[A], G[A])) =
         (self.apply(fs._1)(p._1), G.apply(fs._2)(p._2))
     }
-  }
 
   // Here we simply use `map2` to lift `apply` and `unit` themselves from one
   // Applicative into the other.
@@ -68,7 +67,6 @@ trait Applicative[F[?]] extends Functor[F] { self =>
     (ofa foldLeft unit(Map.empty[K,V])) { case (acc, (k, fv)) =>
       map2(acc, fv)((m, v) => m + (k -> v))
     }
-
 }
 
 enum Validation[+E, +A] {
@@ -112,7 +110,7 @@ trait Monad[F[?]] extends Applicative[F] {
     join(map(ma)(f))
 
   override def apply[A,B](mf: F[A => B])(ma: F[A]): F[B] =
-    flatMap(mf)(f => map(ma)(f))
+    flatMap(mf)(map(ma))
 
   override def map[A,B](m: F[A])(f: A => B): F[B] =
     flatMap(m)(a => unit(f(a)))
@@ -256,11 +254,10 @@ object Traverse {
 
   // An example of a Foldable that is not a functor
   case class Iteration[A](a: A, f: A => A, n: Int) {
-    def foldMap[B](g: A => B)(M: Monoid[B]): B = {
+    def foldMap[B](g: A => B)(M: Monoid[B]): B =
       def iterate(n: Int, b: B, c: A): B =
         if n <= 0 then b else iterate(n-1, g(c), f(a))
       iterate(n, M.zero, a)
-    }
   }
 }
 

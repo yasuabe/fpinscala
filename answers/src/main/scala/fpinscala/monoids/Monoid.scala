@@ -117,7 +117,7 @@ object Monoid {
   // This implementation detects only ascending order,
   // but you can write a monoid that detects both ascending and descending
   // order if you like.
-  def ordered(ints: IndexedSeq[Int]): Boolean = {
+  def ordered(ints: IndexedSeq[Int]): Boolean =
     // Our monoid tracks the minimum and maximum element seen so far
     // as well as whether the elements are so far ordered.
     given as Monoid[Option[(Int, Int, Boolean)]] {
@@ -133,7 +133,6 @@ object Monoid {
     }
     // The empty sequence is ordered, and each element by itself is ordered.
     (foldMapV(ints)(i => Option((i, i, true)))).map(_._3).getOrElse(true)
-  }
 
   // This ability to 'lift' a monoid any monoid to operate within
   // some context (here `Par`) is something we'll discuss more in
@@ -165,20 +164,16 @@ object Monoid {
         Part(l1, w1 + (if ((r1 + l2).isEmpty) 0 else 1) + w2, r2)
   }
 
-  def count(s: String): Int = {
+  def count(s: String): Int =
     // A single character's count. Whitespace does not count,
     // and non-whitespace starts a new Stub.
     def wc(c: Char): WC =
-      if (c.isWhitespace)
-        Part("", 0, "")
-      else
-        Stub(c.toString)
+      if c.isWhitespace then Part("", 0, "") else Stub(c.toString)
     // `unstub(s)` is 0 if `s` is empty, otherwise 1.
     def unstub(s: String) = s.length min 1
     foldMapV(s.toIndexedSeq)(wc) given wcMonoid match
       case Stub(s) => unstub(s)
       case Part(l, w, r) => unstub(l) + w + unstub(r)
-  }
 
   given productMonoid[A,B] as Monoid[(A, B)] given (A: Monoid[A], B: Monoid[B]) {
     def (x: (A, B)) op (y: (A, B)) =

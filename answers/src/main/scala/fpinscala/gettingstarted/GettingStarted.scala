@@ -8,57 +8,51 @@ object MyModule {
     if (n < 0) -n
     else n
 
-  private def formatAbs(x: Int) = {
+  private def formatAbs(x: Int) =
     val msg = "The absolute value of %d is %d"
     msg.format(x, abs(x))
-  }
 
   def main(args: Array[String]): Unit =
     println(formatAbs(-42))
 
   // A definition of factorial, using a local, tail recursive function
-  def factorial(n: Int): Int = {
+  def factorial(n: Int): Int =
     @annotation.tailrec
     def go(n: Int, acc: Int): Int =
       if n <= 0 then acc
       else           go(n-1, n*acc)
 
     go(n, 1)
-  }
 
   // Another implementation of `factorial`, this time with a `while` loop
-  def factorial2(n: Int): Int = {
+  def factorial2(n: Int): Int =
     var acc = 1
     var i = n
     while i > 0 do acc *= i; i -= 1
     acc
-  }
 
   // Exercise 1: Write a function to compute the nth fibonacci number
 
   // 0 and 1 are the first two numbers in the sequence,
   // so we start the accumulators with those.
   // At every iteration, we add the two numbers to get the next one.
-  def fib(n: Int): Int = {
+  def fib(n: Int): Int =
     @annotation.tailrec
     def loop(n: Int, prev: Int, cur: Int): Int =
       if n == 0 then prev
       else loop(n - 1, cur, prev + cur)
     loop(n, 0, 1)
-  }
 
   // This definition and `formatAbs` are very similar..
-  private def formatFactorial(n: Int) = {
+  private def formatFactorial(n: Int) =
     val msg = "The factorial of %d is %d."
     msg.format(n, factorial(n))
-  }
 
   // We can generalize `formatAbs` and `formatFactorial` to
   // accept a _function_ as a parameter
-  def formatResult(name: String, n: Int, f: Int => Int) = {
+  def formatResult(name: String, n: Int, f: Int => Int) =
     val msg = "The %s of %d is %d."
     msg.format(name, n, f(n))
-  }
 }
 
 object FormatAbsAndFactorial {
@@ -67,10 +61,9 @@ object FormatAbsAndFactorial {
 
   // Now we can use our general `formatResult` function
   // with both `abs` and `factorial`
-  def main(args: Array[String]): Unit = {
+  def main(args: Array[String]): Unit =
     println(formatResult("absolute value", -42, abs))
     println(formatResult("factorial", 7, factorial))
-  }
 }
 
 // Functions get passed around so often in FP that it's
@@ -80,7 +73,7 @@ object AnonymousFunctions {
   import MyModule._
 
   // Some examples of anonymous functions:
-  def main(args: Array[String]): Unit = {
+  def main(args: Array[String]): Unit =
     println(formatResult("absolute value", -42, abs))
     println(formatResult("factorial", 7, factorial))
     println(formatResult("increment", 7, (x: Int) => x + 1))
@@ -88,14 +81,13 @@ object AnonymousFunctions {
     println(formatResult("increment3", 7, x => x + 1))
     println(formatResult("increment4", 7, _ + 1))
     println(formatResult("increment5", 7, x => { val r = x + 1; r }))
-  }
 }
 
 object MonomorphicBinarySearch {
 
   // First, a findFirst, specialized to `String`.
   // Ideally, we could generalize this to work for any `Array` type.
-  def findFirst(ss: Array[String], key: String): Int = {
+  def findFirst(ss: Array[String], key: String): Int =
     @annotation.tailrec
     def loop(n: Int): Int =
       // If `n` is past the end of the array, return `-1`
@@ -108,8 +100,6 @@ object MonomorphicBinarySearch {
       else loop(n + 1) // Otherwise increment `n` and keep looking.
     // Start the loop at the first element of the array.
     loop(0)
-  }
-
 }
 
 object PolymorphicFunctions {
@@ -119,7 +109,7 @@ object PolymorphicFunctions {
   // Instead of hard-coding `String`, we take a type `A` as a parameter.
   // And instead of hard-coding an equality check for a given key,
   // we take a function with which to test each element of the array.
-  def findFirst[A](as: Array[A], p: A => Boolean): Int = {
+  def findFirst[A](as: Array[A], p: A => Boolean): Int =
     @annotation.tailrec
     def loop(n: Int): Int =
       if n >= as.length then -1
@@ -129,25 +119,23 @@ object PolymorphicFunctions {
       else                  loop(n + 1)
 
     loop(0)
-  }
 
 
   // Exercise 2: Implement a polymorphic function to check whether
   // an `Array[A]` is sorted
-  def isSorted[A](as: Array[A], gt: (A,A) => Boolean): Boolean = {
+  def isSorted[A](as: Array[A], gt: (A, A) => Boolean): Boolean =
     @annotation.tailrec
     def go(n: Int): Boolean =
-      if      n >= as.length-1   then true
-      else if gt(as(n), as(n+1)) then false
-      else                            go(n+1)
+      if      n >= as.length - 1   then true
+      else if gt(as(n), as(n + 1)) then false
+      else                              go(n + 1)
 
     go(0)
-  }
 
   // Polymorphic functions are often so constrained by their type
   // that they only have one implementation! Here's an example:
 
-  def partial1[A,B,C](a: A, f: (A,B) => C): B => C =
+  def partial1[A,B,C](a: A, f: (A, B) => C): B => C =
     f(a, _)
 
   // Exercise 3: Implement `curry`.

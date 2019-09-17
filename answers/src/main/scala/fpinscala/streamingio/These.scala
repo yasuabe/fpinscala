@@ -39,9 +39,8 @@ object These {
    * of each (possibly empty). 
    */
   def zipResidual[A,B,C](a: Seq[A], b: Seq[B]): 
-     (Seq[(A,B)], Seq[A], Seq[B]) = {
+     (Seq[(A,B)], Seq[A], Seq[B]) =
     val z = a zip b
     val len = z.length
     (z, a drop len, b drop len)
-  }
 }

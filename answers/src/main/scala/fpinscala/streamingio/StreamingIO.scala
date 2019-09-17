@@ -147,18 +147,17 @@ object SimpleStreamTransducers {
      * Feed `in` to this `Process`. Uses a tail recursive loop as long
      * as `this` is in the `Await` state.
      */
-    def feed(in: Seq[I]): Process[I,O] = {
+    def feed(in: Seq[I]): Process[I,O] =
       @annotation.tailrec
       def go(in: Seq[I], cur: Process[I,O]): Process[I,O] =
         cur match
-          case Halt() => Halt()
+          case Halt()      => Halt()
           case Await(recv) =>
             if in.nonEmpty then go(in.tail, recv(Some(in.head)))
             else                cur
-          case Emit(h, t) => Emit(h, t.feed(in))
+          case Emit(h, t)  => Emit(h, t.feed(in))
 
       go(in, this)
-    }
 
 
     /*
@@ -170,29 +169,27 @@ object SimpleStreamTransducers {
      * `Process` definitions can often be expressed without explicit
      * recursion, by repeating some simpler `Process` forever.
      */
-    def repeat: Process[I,O] = {
+    def repeat: Process[I,O] =
       def go(p: Process[I,O]): Process[I,O] = p match
-        case Halt() => go(this)
+        case Halt()      => go(this)
         case Await(recv) => Await {
           case None => recv(None)
-          case i => go(recv(i))
+          case i    => go(recv(i))
         }
-        case Emit(h, t) => Emit(h, go(t))
+        case Emit(h, t)  => Emit(h, go(t))
 
       go(this)
-    }
 
-    def repeatN(n: Int): Process[I,O] = {
-      def go(n: Int, p: Process[I,O]): Process[I,O] = p match
-        case Halt() => if (n > 0) go(n-1, this) else Halt()
+    def repeatN(n: Int): Process[I, O] =
+      def go(n: Int, p: Process[I, O]): Process[I, O] = p match
+        case Halt()      => if (n > 0) go(n - 1, this) else Halt()
         case Await(recv) => Await {
           case None => recv(None)
-          case i => go(n,recv(i))
+          case i    => go(n, recv(i))
         }
-        case Emit(h, t) => Emit(h, go(n,t))
+        case Emit(h, t)  => Emit(h, go(n, t))
 
       go(n, this)
-    }
 
     /*
      * As an example of `repeat`, see `Process.filter`. We define
@@ -214,12 +211,12 @@ object SimpleStreamTransducers {
 
     /* Add `p` to the fallback branch of this process */
     def orElse(p: Process[I,O]): Process[I,O] = this match
-      case Halt() => p
+      case Halt()      => p
       case Await(recv) => Await {
         case None => p
-        case x => recv(x)
+        case x    => recv(x)
       }
-      case _ => this
+      case _           => this
 
     case Emit( head: O, tail: Process[I,O] = Halt())
     case Await(recv: Option[I] => Process[I,O])
@@ -253,7 +250,7 @@ object SimpleStreamTransducers {
                    fallback: Process[I,O] = Halt[I,O]()): Process[I,O] =
       Await[I,O] {
         case Some(i) => f(i)
-        case None => fallback
+        case None    => fallback
       }
 
     /*
@@ -284,11 +281,10 @@ object SimpleStreamTransducers {
      * Here's a typical `Process` definition that requires tracking some
      * piece of state (in this case, the running total):
      */
-    def sum: Process[Double,Double] = {
+    def sum: Process[Double,Double] =
       def go(acc: Double): Process[Double,Double] =
-        await(d => emit(d+acc, go(d+acc)))
+        await(d => emit(d + acc, go(d + acc)))
       go(0.0)
-    }
 
     /*
      * Exercise 1: Implement `take`, `drop`, `takeWhile`, and `dropWhile`.
@@ -329,11 +325,10 @@ object SimpleStreamTransducers {
       lift((i: I) => 1.0) |> sum |> lift(_.toInt)
 
     /* For comparison, here is an explicit recursive implementation. */
-    def count2[I]: Process[I,Int] = {
+    def count2[I]: Process[I,Int] =
       def go(n: Int): Process[I,Int] =
         await(i => emit(n + 1, go(n + 1)))
       go(0)
-    }
 
     /*
      * Exercise 3: Implement `mean`.
@@ -341,15 +336,14 @@ object SimpleStreamTransducers {
      * This is an explicit recursive definition. We'll factor out a
      * generic combinator shortly.
      */
-    def mean: Process[Double,Double] = {
+    def mean: Process[Double,Double] =
       def go(sum: Double, count: Double): Process[Double,Double] =
         await(d => emit((sum + d) / (count + 1), go(sum + d,count + 1)))
       go(0.0, 0.0)
-    }
 
     def loop[S,I,O](z: S)(f: (I,S) => (O,S)): Process[I,O] =
-      await(i => f(i,z) match {
-        case (o,s2) => emit(o, loop(s2)(f))
+      await(i => f(i, z) match {
+        case (o, s2) => emit(o, loop(s2)(f))
       })
 
     /* Exercise 4: Implement `sum` and `count` in terms of `loop` */
@@ -541,27 +535,26 @@ object GeneralizedStreamTransducers {
      */
     def flatMap[O2](f: O => Process[F,O2]): Process[F,O2] =
       this match
-        case Halt(err) => Halt(err)
-        case Emit(o, t) => Try(f(o)) ++ t.flatMap(f)
+        case Halt(err)       => Halt(err)
+        case Emit(o, t)      => Try(f(o)) ++ t.flatMap(f)
         case Await(req,recv) =>
           Await(req, recv andThen (_ flatMap f))
 
     def repeat: Process[F,O] =
       this ++ this.repeat
 
-    def repeatNonempty: Process[F,O] = {
-      val cycle = (this.map(o => Some(o): Option[O]) ++ emit(None)).repeat
+    def repeatNonempty: Process[F,O] =
+      val cycle = (this.map(Some(_)) ++ emit(None)).repeat
       // cut off the cycle when we see two `None` values in a row, as this
       // implies `this` has produced no values during an iteration
       val trimmed = cycle |> window2 |> (takeWhile {
         case (Some(None), None) => false
-        case _ => true
+        case _                  => true
       })
       trimmed.map(_._2).flatMap {
-        case None => Halt(End)
+        case None    => Halt(End)
         case Some(o) => emit(o)
       }
-    }
 
     /*
      * Exercise 10: This function is defined only if given a `MonadCatch[F]`.
@@ -569,16 +562,14 @@ object GeneralizedStreamTransducers {
      * below, this is not tail recursive and responsibility for stack safety
      * is placed on the `Monad` instance.
      */
-    def runLog given(F: MonadCatch[F]): F[IndexedSeq[O]] = {
-      def go(cur: Process[F,O], acc: IndexedSeq[O]): F[IndexedSeq[O]] =
-        cur match
-          case Emit(h,t) => go(t, acc :+ h)
-          case Halt(End) => F.unit(acc)
-          case Halt(err) => F.fail(err)
-          case Await(req,recv) => F.flatMap (F.attempt(req)) { e => go(Try(recv(e)), acc) }
+    def runLog given(F: MonadCatch[F]): F[IndexedSeq[O]] =
+      def go(cur: Process[F,O], acc: IndexedSeq[O]): F[IndexedSeq[O]] = cur match
+        case Emit(h, t)       => go(t, acc :+ h)
+        case Halt(End)        => F.unit(acc)
+        case Halt(err)        => F.fail(err)
+        case Await(req, recv) => F.flatMap (F.attempt(req))(e => go(Try(recv(e)), acc))
 
       go(this, IndexedSeq())
-    }
 
     /*
      * We define `Process1` as a type alias - see the companion object
@@ -698,27 +689,25 @@ object GeneralizedStreamTransducers {
      * with an error if an exception is thrown.
      */
     def Try[F[?],O](p: => Process[F,O]): Process[F,O] =
-      try p
-      catch { case e: Throwable => Halt(e) }
+      try p catch
+        case e: Throwable => Halt(e)
 
     /*
      * Safely produce `p`, or run `cleanup` and halt gracefully with the
      * exception thrown while evaluating `p`.
      */
     def TryOr[F[?],O](p: => Process[F,O])(cleanup: Process[F,O]): Process[F,O] =
-      try p
-      catch { case e: Throwable => cleanup ++ Halt(e) }
+      try p catch 
+        case e: Throwable => cleanup ++ Halt(e)
 
     /*
      * Safely produce `p`, or run `cleanup` or `fallback` if an exception
      * occurs while evaluating `p`.
      */
     def TryAwait[F[?],O](p: => Process[F,O])(fallback: Process[F,O], cleanup: Process[F,O]): Process[F,O] =
-      try p
-      catch {
+      try p catch
         case End => fallback
         case e: Throwable => cleanup ++ Halt(e)
-      }
 
     /* Our generalized `Process` type can represent sources! */
 
@@ -751,8 +740,8 @@ object GeneralizedStreamTransducers {
           case Halt(err) => throw err
           case Await(req,recv) =>
             val next =
-              try recv(Right(fpinscala.iomonad.unsafePerformIO(req)))
-              catch { case err: Throwable => recv(Left(err)) }
+              try recv(Right(fpinscala.iomonad.unsafePerformIO(req))) catch
+                case err: Throwable => recv(Left(err))
             go(next, acc)
 
       try go(src, IndexedSeq())
@@ -793,7 +782,7 @@ object GeneralizedStreamTransducers {
     def resource_[R,O](acquire: IO[R])(
                        use: R => Process[IO,O])(
                        release: R => IO[Unit]): Process[IO,O] =
-      resource(acquire)(use)(release andThen (eval_[IO,Unit,O]))
+      resource(acquire)(use)(release andThen (eval_[IO, Unit, O]))
 
     /*
      * Create a `Process[IO,O]` from the lines of a file, using
@@ -873,22 +862,17 @@ object GeneralizedStreamTransducers {
       else           await1[I,I](i => emit(i, take(n-1)))
 
     def takeWhile[I](f: I => Boolean): Process1[I,I] =
-      await1(i =>
-        if f(i) then emit(i, takeWhile(f))
-        else         halt1)
+      await1(i => if f(i) then emit(i, takeWhile(f)) else halt1)
 
     def dropWhile[I](f: I => Boolean): Process1[I,I] =
-      await1(i =>
-        if f(i) then dropWhile(f)
-        else         emit(i,id))
+      await1(i => if f(i) then dropWhile(f) else emit(i,id))
 
     def id[I]: Process1[I,I] = await1(emit(_, id))
 
-    def window2[I]: Process1[I,(Option[I],I)] = {
+    def window2[I]: Process1[I,(Option[I],I)] =
       def go(prev: Option[I]): Process1[I,(Option[I],I)] =
         await1[I,(Option[I],I)](i => emit(prev -> i) ++ go(Some(i)))
       go(None)
-    }
 
     /** Emits `sep` in between each input received. */
     def intersperse[I](sep: I): Process1[I,I] =

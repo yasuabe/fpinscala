@@ -102,9 +102,9 @@ object Prop {
   def run(p: Prop,
           maxSize: Int = 100, // A default argument of `200`
           testCases: Int = 100,
-          rng: RNG = RNG.Simple(System.currentTimeMillis)): Unit = {
+          rng: RNG = RNG.Simple(System.currentTimeMillis)): Unit =
     p.run(maxSize, testCases, rng) match
-      case Left(msg) => println("! test failed:\n" + msg)
+      case Left(msg) => println("! test failed:\n" + msg) // TODO: interpolation
       case Right((Unfalsified,n)) =>
         println("+ property unfalsified, ran " + n + " tests")
       case Right((Proven,n)) =>
@@ -112,7 +112,6 @@ object Prop {
       case Right((Exhausted,n)) =>
         println("+ property unfalsified up to max size, ran " +
                  n + " tests")
-  }
 
   val ES: ExecutorService = Executors.newCachedThreadPool
   val p1 = Prop.forAll(Gen.unit(Par.unit(1)))(i =>
@@ -305,7 +304,7 @@ object Gen {
    * the two random samplers. The exhaustive case is trickier if we want to try
    * to produce a stream that does a weighted interleave of the two exhaustive streams.
    */
-  def weighted[A](g1: (Gen[A],Double), g2: (Gen[A],Double)): Gen[A] = {
+  def weighted[A](g1: (Gen[A],Double), g2: (Gen[A],Double)): Gen[A] =
     /* The probability we should pull from `g1`. */
     val g1Threshold = g1._2.abs / (g1._2.abs + g2._2.abs)
 
@@ -317,7 +316,6 @@ object Gen {
 
     Gen(State((r: RNG) => RNG.double given r).flatMap(d => if d < g1Threshold then g1._1.sample else g2._1.sample),
         interleave(bools, g1._1.exhaustive, g2._1.exhaustive))
-  }
 
   /* Produce an infinite random stream from a `Gen` and a starting `RNG`. */
   def randomStream[A](g: Gen[A])(rng: RNG): Stream[A] =

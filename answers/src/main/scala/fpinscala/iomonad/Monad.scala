@@ -24,14 +24,14 @@ trait Monad[F[?]] extends Functor[F] {
   def skip[A](a: F[A]): F[Unit] = as(a)(())
   def when[A](b: Boolean)(fa: => F[A]): F[Boolean] =
     if (b) as(fa)(true) else unit(false)
-  def forever[A,B](a: F[A]): F[B] = {
+  def forever[A,B](a: F[A]): F[B] =
     lazy val t: F[B] = a flatMap (_ => t)
     t
-  }
-  def while_(a: F[Boolean])(b: F[Unit]): F[Unit] = {
+
+  def while_(a: F[Boolean])(b: F[Unit]): F[Unit] =
     lazy val t: F[Unit] = while_(a)(b)
     a flatMap (c => skip(when(c)(t)))
-  }
+
   def doWhile[A](a: F[A])(cond: A => F[Boolean]): F[Unit] = for
     a1 <- a
     ok <- cond(a1)

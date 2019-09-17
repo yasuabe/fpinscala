@@ -7,47 +7,42 @@ object MyModule {
   def abs(n: Int): Int =
     if n < 0 then -n else n
 
-  private def formatAbs(x: Int) = {
+  private def formatAbs(x: Int) =
     val msg = "The absolute value of %d is %d"
     msg.format(x, abs(x))
-  }
 
   def main(args: Array[String]): Unit =
     println(formatAbs(-42))
 
   // A definition of factorial, using a local, tail recursive function
-  def factorial(n: Int): Int = {
+  def factorial(n: Int): Int =
     @annotation.tailrec
     def go(n: Int, acc: Int): Int =
       if n <= 0 then acc else go(n-1, n*acc)
 
     go(n, 1)
-  }
 
   // Another implementation of `factorial`, this time with a `while` loop
-  def factorial2(n: Int): Int = {
+  def factorial2(n: Int): Int =
     var acc = 1
     var i = n
     while i > 0 do acc *= i; i -= 1
     acc
-  }
 
   // Exercise 1: Write a function to compute the nth fibonacci number
 
   def fib(n: Int): Int = ???
 
   // This definition and `formatAbs` are very similar..
-  private def formatFactorial(n: Int) = {
+  private def formatFactorial(n: Int) =
     val msg = "The factorial of %d is %d."
     msg.format(n, factorial(n))
-  }
 
   // We can generalize `formatAbs` and `formatFactorial` to
   // accept a _function_ as a parameter
-  def formatResult(name: String, n: Int, f: Int => Int) = {
+  def formatResult(name: String, n: Int, f: Int => Int) =
     val msg = "The %s of %d is %d."
     msg.format(name, n, f(n))
-  }
 }
 
 object FormatAbsAndFactorial {
@@ -56,10 +51,9 @@ object FormatAbsAndFactorial {
 
   // Now we can use our general `formatResult` function
   // with both `abs` and `factorial`
-  def main(args: Array[String]): Unit = {
+  def main(args: Array[String]): Unit =
     println(formatResult("absolute value", -42, abs))
     println(formatResult("factorial", 7, factorial))
-  }
 }
 
 object TestFib {
@@ -67,10 +61,9 @@ object TestFib {
   import MyModule._
 
   // test implementation of `fib`
-  def main(args: Array[String]): Unit = {
+  def main(args: Array[String]): Unit =
     println("Expected: 0, 1, 1, 2, 3, 5, 8")
     println("Actual:   %d, %d, %d, %d, %d, %d, %d".format(fib(0), fib(1), fib(2), fib(3), fib(4), fib(5), fib(6)))
-  }
 }
 
 // Functions get passed around so often in FP that it's
@@ -80,7 +73,7 @@ object AnonymousFunctions {
   import MyModule._
 
   // Some examples of anonymous functions:
-  def main(args: Array[String]): Unit = {
+  def main(args: Array[String]): Unit =
     println(formatResult("absolute value", -42, abs))
     println(formatResult("factorial", 7, factorial))
     println(formatResult("increment", 7, (x: Int) => x + 1))
@@ -88,7 +81,6 @@ object AnonymousFunctions {
     println(formatResult("increment3", 7, x => x + 1))
     println(formatResult("increment4", 7, _ + 1))
     println(formatResult("increment5", 7, x => { val r = x + 1; r }))
-  }
 }
 
 object MonomorphicBinarySearch {
@@ -98,9 +90,9 @@ object MonomorphicBinarySearch {
   // point numbers
   // Ideally, we could generalize this to work for any `Array` type,
   // so long as we have some way of comparing elements of the `Array`
-  def binarySearch(ds: Array[Double], key: Double): Int = {
+  def binarySearch(ds: Array[Double], key: Double): Int =
     @annotation.tailrec
-    def go(low: Int, mid: Int, high: Int): Int = {
+    def go(low: Int, mid: Int, high: Int): Int =
       if low > high then -mid - 1
       else
         val mid2 = (low + high) / 2
@@ -109,9 +101,7 @@ object MonomorphicBinarySearch {
         if      d == key then mid2
         else if d > key  then go(low, mid2, mid2-1)
         else                  go(mid2 + 1, mid2, high)
-    }
     go(0, 0, ds.length - 1)
-  }
 
 }
 
@@ -119,9 +109,9 @@ object PolymorphicFunctions {
 
   // Here's a polymorphic version of `binarySearch`, parameterized on
   // a function for testing whether an `A` is greater than another `A`.
-  def binarySearch[A](as: Array[A], key: A, gt: (A,A) => Boolean): Int = {
+  def binarySearch[A](as: Array[A], key: A, gt: (A,A) => Boolean): Int =
     @annotation.tailrec
-    def go(low: Int, mid: Int, high: Int): Int = {
+    def go(low: Int, mid: Int, high: Int): Int =
       if low > high then -mid - 1
       else
         val mid2 = (low + high) / 2
@@ -130,9 +120,7 @@ object PolymorphicFunctions {
         if (!greater && !gt(key,a)) mid2
         else if (greater) go(low, mid2, mid2-1)
         else go(mid2 + 1, mid2, high)
-    }
     go(0, 0, as.length - 1)
-  }
 
   // Exercise 2: Implement a polymorphic function to check whether
   // an `Array[A]` is sorted

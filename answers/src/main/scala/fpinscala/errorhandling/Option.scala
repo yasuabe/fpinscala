@@ -47,7 +47,7 @@ enum Option[+A] {
 }
 
 object Option {
-  def failingFn(i: Int): Int = {
+  def failingFn(i: Int): Int =
     // `val y: Int = ...` declares `y` as having type `Int`, and sets it equal to the right hand side of the `=`.
     val y: Int = throw Exception("fail!")
     try
@@ -57,16 +57,14 @@ object Option {
     // that matches any `Exception`, and it binds this value to the identifier `e`. The match returns the value 43.
     catch
       case e: Exception => 43
-  }
 
-  def failingFn2(i: Int): Int = {
+  def failingFn2(i: Int): Int =
     try
       val x = 42 + 5
       // A thrown Exception can be given any type; here we're annotating it with the type `Int`
       x + ((throw Exception("fail!")): Int)
     catch
       case e: Exception => 43
-  }
 
   def mean(xs: Seq[Double]): Option[Double] =
     if xs.isEmpty then None
@@ -83,10 +81,9 @@ object Option {
   /*
   Here's an explicit recursive version:
   */
-  def sequence[A](a: List[Option[A]]): Option[List[A]] =
-    a match
-      case Nil => Some(Nil)
-      case h :: t => h flatMap (hh => sequence(t) map (hh :: _))
+  def sequence[A](a: List[Option[A]]): Option[List[A]] = a match
+    case Nil    => Some(Nil)
+    case h :: t => h flatMap (hh => sequence(t) map (hh :: _))
 
   /*
   It can also be implemented using `foldRight` and `map2`. The type annotation on `foldRight` is needed here; otherwise
@@ -94,15 +91,14 @@ object Option {
   unfortunate consequence of Scala using subtyping to encode algebraic data types.
   */
   def sequence_1[A](a: List[Option[A]]): Option[List[A]] =
-    a.foldRight[Option[List[A]]](Some(Nil))((x,y) => map2(x,y)(_ :: _))
+    a.foldRight[Option[List[A]]](Some(Nil))((x, y) => map2(x, y)(_ :: _))
 
-  def traverse[A, B](a: List[A])(f: A => Option[B]): Option[List[B]] =
-    a match
-      case Nil => Some(Nil)
-      case h::t => map2(f(h), traverse(t)(f))(_ :: _)
+  def traverse[A, B](a: List[A])(f: A => Option[B]): Option[List[B]] = a match
+    case Nil  => Some(Nil)
+    case h::t => map2(f(h), traverse(t)(f))(_ :: _)
 
   def traverse_1[A, B](a: List[A])(f: A => Option[B]): Option[List[B]] =
-    a.foldRight[Option[List[B]]](Some(Nil))((h,t) => map2(f(h),t)(_ :: _))
+    a.foldRight[Option[List[B]]](Some(Nil))((h, t) => map2(f(h), t)(_ :: _))
 
   def sequenceViaTraverse[A](a: List[Option[A]]): Option[List[A]] =
     traverse(a)(x => x)

@@ -96,7 +96,7 @@ object SliceableTypes {
   /** Returns -1 if s.startsWith(s2), otherwise returns the
     * first index where the two strings differed. If s2 is
     * longer than s1, returns s.length. */
-  def firstNonmatchingIndex(s: String, s2: String, offset: Int): Int = {
+  def firstNonmatchingIndex(s: String, s2: String, offset: Int): Int =
     var i = 0
     while i+offset < s.length && i < s2.length do
       if (s.charAt(i+offset) != s2.charAt(i)) return i
@@ -104,15 +104,13 @@ object SliceableTypes {
 
     if s.length-offset >= s2.length then -1
     else s.length-offset
-  }
 }
 
 object Sliceable extends Parsers[Parser] {
 
-  def run[A](p: Parser[A])(s: String): Either[ParseError,A] = {
+  def run[A](p: Parser[A])(s: String): Either[ParseError,A] =
     val s0 = ParseState(Location(s), false)
     (p given s0).extract(s)
-  }
 
   // consume no characters and succeed with the given value
   def succeed[A](a: A): Parser[A] = Success(a, 0)
@@ -222,37 +220,33 @@ object Sliceable extends Parsers[Parser] {
       case f@Failure(_,_) => f
 
   override def product[A,B](p: Parser[A], p2: => Parser[B]): Parser[(A,B)] =
-    map2(p,p2)((_,_))
+    map2(p, p2)((_, _))
 
   /* We provide an overridden version of `many` that accumulates
    * the list of results using a monolithic loop. This avoids
    * stack overflow errors.
    */
   override def many[A](p: Parser[A]): Parser[List[A]] =
-    {
-      val s = the[ParseState]
-      var nConsumed: Int = 0
-      if (s.isSliced) {
-        def go(p: Parser[String], offset: Int): Result[String] =
-          (p given s.advanceBy(offset)) match
-            case f@Failure(e, true) => f
-            case Failure(e, _) => Slice(offset)
-            case Slice(n)      => go(p, offset + n)
-            case Success(_, _) => sys.error("sliced parser should not return success, only slice")
+    val s         = the[ParseState]
+    var nConsumed = 0
+    if s.isSliced then
+      def go(p: Parser[String], offset: Int): Result[String] =
+        (p given s.advanceBy(offset)) match
+          case f@Failure(e, true) => f
+          case Failure(e, _) => Slice(offset)
+          case Slice(n)      => go(p, offset + n)
+          case Success(_, _) => sys.error("sliced parser should not return success, only slice")
 
-        go(p.slice, 0).asInstanceOf[Result[List[A]]]
-      }
-      else
-        val buf = collection.mutable.ListBuffer[A]()
-        def go(p: Parser[A], offset: Int): Result[List[A]] = {
-          (p given s.advanceBy(offset)) match
-            case Success(a, n)      => buf += a; go(p, offset + n)
-            case f@Failure(e, true) => f
-            case Failure(e, _)      => Success(buf.toList,offset)
-            case Slice(n)           =>
-              buf += s.input.substring(offset, offset + n).asInstanceOf[A]
-              go(p, offset + n)
-        }
-        go(p, 0)
-    }
+      go(p.slice, 0).asInstanceOf[Result[List[A]]]
+    else
+      val buf = collection.mutable.ListBuffer[A]()
+      def go(p: Parser[A], offset: Int): Result[List[A]] =
+        (p given s.advanceBy(offset)) match
+          case Success(a, n)      => buf += a; go(p, offset + n)
+          case f@Failure(e, true) => f
+          case Failure(e, _)      => Success(buf.toList,offset)
+          case Slice(n)           =>
+            buf += s.input.substring(offset, offset + n).asInstanceOf[A]
+            go(p, offset + n)
+      go(p, 0)
 }

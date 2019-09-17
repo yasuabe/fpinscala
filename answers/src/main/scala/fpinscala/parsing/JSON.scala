@@ -13,7 +13,7 @@ object JSON {
   case class JArray(get: IndexedSeq[JSON]) extends JSON
   case class JObject(get: Map[String, JSON]) extends JSON
 
-  def jsonParser[Parser[+_]](P: Parsers[Parser]): Parser[JSON] = {
+  def jsonParser[Parser[+_]](P: Parsers[Parser]): Parser[JSON] =
     // we'll hide the string implicit conversion and promote strings to tokens instead
     // this is a bit nicer than having to write token everywhere
     import P.{string => _, _}
@@ -34,7 +34,6 @@ object JSON {
     }
     def value: Parser[JSON] = lit | obj | array
     root(whitespace *> (obj | array))
-  }
 }
 
 /**

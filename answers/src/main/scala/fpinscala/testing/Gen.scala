@@ -215,12 +215,11 @@ object Gen {
   def union[A](g1: Gen[A], g2: Gen[A]): Gen[A] =
     boolean.flatMap(b => if b then g1 else g2)
 
-  def weighted[A](g1: (Gen[A],Double), g2: (Gen[A],Double)): Gen[A] = {
+  def weighted[A](g1: (Gen[A],Double), g2: (Gen[A],Double)): Gen[A] =
     /* The probability we should pull from `g1`. */
     val g1Threshold = g1._2.abs / (g1._2.abs + g2._2.abs)
 
     Gen(State((r: RNG) => RNG.double given r).flatMap(d => if d < g1Threshold then g1._1.sample else g2._1.sample))
-  }
 
   def listOf[A](g: Gen[A]): SGen[List[A]] =
     SGen(n => g.listOfN(n))
@@ -282,12 +281,10 @@ case class SGen[+A](g: Int => Gen[A]) {
   def map[B](f: A => B): SGen[B] =
     SGen { g(_) map f }
 
-  def flatMap[B](f: A => SGen[B]): SGen[B] = {
-    val g2: Int => Gen[B] = n => {
-      g(n) flatMap { f(_).g(n) }
-    }
+  def flatMap[B](f: A => SGen[B]): SGen[B] =
+    val g2: Int => Gen[B] = n =>
+      g(n) flatMap (f(_).g(n))
     SGen(g2)
-  }
 
   def **[B](s2: SGen[B]): SGen[(A,B)] =
     SGen(n => apply(n) ** s2(n))

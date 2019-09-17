@@ -6,25 +6,22 @@ import language.implicitConversions
 
 object BindTest extends App {
 
-  def timeit(n: Int)(task: => Unit): Unit = {
+  def timeit(n: Int)(task: => Unit): Unit =
     val start = System.currentTimeMillis
     (0 to n).foreach { _ => task }
     val stop = System.currentTimeMillis
     println(s"${(stop - start) / 1000.0} seconds")
-  }
 
   val N = 100000
 
-  def go[F[?]](unit: F[Unit])(f: F[Int] => Int) given (F: Monad[F]): Unit = {
+  def go[F[?]](unit: F[Unit])(f: F[Int] => Int) given (F: Monad[F]): Unit =
     import given F.toMonadic
-    f { (0 to N).map(i => F.map(unit)(_ => i)).foldLeft(F.unit(0)) {
+    f((0 to N).map(i => F.map(unit)(_ => i)).foldLeft(F.unit(0))(
       (f1, f2) => for
         acc <- f1
-        i <- f2
-      yield // if (i == N) println("result: " + (acc+i))
-                (acc + i)
-    }}
-  }
+        i   <- f2
+      yield (acc + i) // if (i == N) println("result: " + (acc+i))
+    ))
 
   import fpinscala.parallelism.Nonblocking._
   import java.util.concurrent.ExecutorService

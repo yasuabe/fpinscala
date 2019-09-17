@@ -140,7 +140,7 @@ object SimpleStreamTransducers {
      * Feed `in` to this `Process`. Uses a tail recursive loop as long
      * as `this` is in the `Await` state.
      */
-    def feed(in: Seq[I]): Process[I,O] = {
+    def feed(in: Seq[I]): Process[I,O] =
       @annotation.tailrec
       def go(in: Seq[I], cur: Process[I,O]): Process[I,O] =
         cur match
@@ -151,7 +151,6 @@ object SimpleStreamTransducers {
           case Emit(h, t) => Emit(h, t.feed(in))
 
       go(in, this)
-    }
 
 
     /*
@@ -163,7 +162,7 @@ object SimpleStreamTransducers {
      * `Process` definitions can often be expressed without explicit
      * recursion, by repeating some simpler `Process` forever.
      */
-    def repeat: Process[I,O] = {
+    def repeat: Process[I,O] =
       def go(p: Process[I,O]): Process[I,O] = p match
         case Halt() => go(this)
         case Await(recv) => Await {
@@ -173,9 +172,8 @@ object SimpleStreamTransducers {
         case Emit(h, t) => Emit(h, go(t))
 
       go(this)
-    }
 
-    def repeatN(n: Int): Process[I,O] = {
+    def repeatN(n: Int): Process[I,O] =
       def go(n: Int, p: Process[I,O]): Process[I,O] = p match
         case Halt() => if n > 0 then go(n-1, this) else Halt()
         case Await(recv) => Await {
@@ -185,7 +183,6 @@ object SimpleStreamTransducers {
         case Emit(h, t) => Emit(h, go(n,t))
 
       go(n, this)
-    }
 
     /*
      * As an example of `repeat`, see `Process.filter`. We define
@@ -272,11 +269,10 @@ object SimpleStreamTransducers {
      * Here's a typical `Process` definition that requires tracking some
      * piece of state (in this case, the running total):
      */
-    def sum: Process[Double,Double] = {
+    def sum: Process[Double,Double] =
       def go(acc: Double): Process[Double,Double] =
         await(d => emit(d+acc, go(d+acc)))
       go(0.0)
-    }
 
     /*
      * Exercise 1: Implement `take`, `drop`, `takeWhile`, and `dropWhile`.
@@ -298,11 +294,10 @@ object SimpleStreamTransducers {
     def count[I]: Process[I,Int] = ???
 
     /* For comparison, here is an explicit recursive implementation. */
-    def count2[I]: Process[I,Int] = {
+    def count2[I]: Process[I,Int] =
       def go(n: Int): Process[I,Int] =
         await(_ => emit(n + 1, go(n + 1)))
       go(0)
-    }
 
     /*
      * Exercise 3: Implement `mean`.
@@ -467,7 +462,7 @@ object GeneralizedStreamTransducers {
     def repeat: Process[F,O] =
       this ++ this.repeat
 
-    def repeatNonempty: Process[F,O] = {
+    def repeatNonempty: Process[F,O] =
       val cycle = (this.map(o => Some(o): Option[O]) ++ emit(None)).repeat
       // cut off the cycle when we see two `None` values in a row, as this
       // implies `this` has produced no values during an iteration
@@ -479,7 +474,6 @@ object GeneralizedStreamTransducers {
         case None => Halt(End)
         case Some(o) => emit(o)
       }
-    }
 
     /*
      * Exercise 10: This function is defined only if given a `MonadCatch[F]`.
@@ -775,22 +769,17 @@ object GeneralizedStreamTransducers {
       else           await1[I,I](i => emit(i, take(n-1)))
 
     def takeWhile[I](f: I => Boolean): Process1[I,I] =
-      await1(i =>
-        if f(i) then emit(i, takeWhile(f))
-        else         halt1)
+      await1(i => if f(i) then emit(i, takeWhile(f)) else halt1)
 
     def dropWhile[I](f: I => Boolean): Process1[I,I] =
-      await1(i =>
-        if f(i) then dropWhile(f)
-        else         emit(i,id))
+      await1(i => if f(i) then dropWhile(f) else emit(i,id))
 
     def id[I]: Process1[I,I] = await1(emit(_, id))
 
-    def window2[I]: Process1[I,(Option[I],I)] = {
+    def window2[I]: Process1[I,(Option[I],I)] =
       def go(prev: Option[I]): Process1[I,(Option[I],I)] =
         await1[I,(Option[I],I)](i => emit(prev -> i) ++ go(Some(i)))
       go(None)
-    }
 
     /** Emits `sep` in between each input received. */
     def intersperse[I](sep: I): Process1[I,I] =
@@ -876,16 +865,16 @@ object GeneralizedStreamTransducers {
     /* A `Sink` which writes input strings to the given file. */
     def fileW(file: String, append: Boolean = false): Sink[IO,String] =
       resource[FileWriter, String => Process[IO,Unit]]
-        { IO { FileWriter(file, append) }}
-        { w => constant { (s: String) => eval[IO,Unit](IO(w.write(s))) }}
+        { IO(FileWriter(file, append)) }
+        { w => constant(s => eval[IO,Unit](IO(w.write(s)))) }
         { w => eval_(IO(w.close)) }
 
     /* The infinite, constant stream. */
     def constant[A](a: A): Process[IO,A] =
-      eval(IO(a)).flatMap { a => Emit(a, constant(a)) }
+      eval(IO(a)) flatMap (a => Emit(a, constant(a)))
 
     /* Exercise 12: Implement `join`. Notice this is the standard monadic combinator! */
-    def join[F[?],A](p: Process[F,Process[F,A]]): Process[F,A] = ???
+    def join[F[?],A](p: Process[F,Process[F,A]]): Process[F, A] = ???
 
     /*
      * An example use of the combinators we have so far: incrementally
@@ -927,23 +916,23 @@ object GeneralizedStreamTransducers {
         { conn => constant { (q: Connection => PreparedStatement) =>
           resource_
             { IO {
-                val rs = q(conn).executeQuery
+                val rs    = q(conn).executeQuery
                 val ncols = rs.getMetaData.getColumnCount
-                val cols = (1 to ncols).map(rs.getMetaData.getColumnName)
+                val cols  = (1 to ncols).map(rs.getMetaData.getColumnName)
                 (rs, cols)
             }}
             { (rs, cols) =>
                 def step =
                   if !rs.next then None
-                  else Some(cols.map(c => (c, rs.getObject(c): Any)).toMap)
-                lazy val rows: Process[IO,Map[String,Any]] =
+                  else Some(cols.map(c => (c, rs.getObject(c))).toMap)
+                lazy val rows: Process[IO, Map[String, Any]] =
                   eval(IO(step)).flatMap {
-                    case None => Halt(End)
+                    case None      => Halt(End)
                     case Some(row) => Emit(row, rows)
                   }
                 rows
             }
-            { p => IO { p._1.close } } // close the ResultSet
+            { p => IO(p._1.close) } // close the ResultSet
         }}
         { c => IO(c.close) }
 

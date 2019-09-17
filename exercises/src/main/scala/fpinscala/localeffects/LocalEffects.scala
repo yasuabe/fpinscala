@@ -6,12 +6,12 @@ import scala.reflect.ClassTag
 object Mutable {
   def quicksort(xs: List[Int]): List[Int] = if (xs.isEmpty) xs else
     val arr = xs.toArray
-    def swap(x: Int, y: Int) = {
+    def swap(x: Int, y: Int) =
       val tmp = arr(x)
       arr(x) = arr(y)
       arr(y) = tmp
-    }
-    def partition(l: Int, r: Int, pivot: Int) = {
+
+    def partition(l: Int, r: Int, pivot: Int) =
       val pivotVal = arr(pivot)
       swap(pivot, r)
       var j = l
@@ -21,12 +21,11 @@ object Mutable {
 
       swap(j, r)
       j
-    }
-    def qs(l: Int, r: Int): Unit = if (l < r) {
+    def qs(l: Int, r: Int): Unit = if l < r then
       val pi = partition(l, r, l + (r - l) / 2)
       qs(l, pi - 1)
       qs(pi + 1, r)
-    }
+    
     qs(0, arr.length - 1)
     arr.toList
 }
@@ -34,26 +33,23 @@ object Mutable {
 sealed trait ST[S,A] { self =>
   protected def run(s: S): (A,S)
   def map[B](f: A => B): ST[S,B] = new ST[S,B] {
-    def run(s: S) = {
+    def run(s: S) =
       val (a, s1) = self.run(s)
       (f(a), s1)
-    }
   }
   def flatMap[B](f: A => ST[S,B]): ST[S,B] = new ST[S,B] {
-    def run(s: S) = {
+    def run(s: S) =
       val (a, s1) = self.run(s)
       f(a).run(s1)
-    }
   }
 }
 
 object ST {
-  def apply[S,A](a: => A) = {
+  def apply[S,A](a: => A) =
     lazy val memo = a
     new ST[S,A] {
       def run(s: S) = (memo, s)
     }
-  }
   def runST[A](st: RunnableST[A]): A =
     st[Null].run(null)._1
 }
@@ -62,10 +58,9 @@ sealed trait STRef[S,A] {
   protected var cell: A
   def read: ST[S,A] = ST(cell)
   def write(a: => A): ST[S,Unit] = new ST[S,Unit] {
-    def run(s: S) = {
+    def run(s: S) =
       cell = a
       ((), s)
-    }
   }
 }
 
@@ -86,10 +81,9 @@ sealed abstract class STArray[S, A] given (manifest: ClassTag[A]) {
 
   // Write a value at the give index of the array
   def write(i: Int, a: A): ST[S,Unit] = new ST[S,Unit] {
-    def run(s: S) = {
+    def run(s: S) =
       value(i) = a
       ((), s)
-    }
   }
 
   // Read the value at the given index of the array
@@ -129,7 +123,7 @@ object Immutable {
   def qs[S](a: STArray[S,Int], l: Int, r: Int): ST[S, Unit] = ???
 
   def quicksort(xs: List[Int]): List[Int] =
-    if (xs.isEmpty) xs else ST.runST(new RunnableST[List[Int]] {
+    if xs.isEmpty then xs else ST.runST(new RunnableST[List[Int]] {
       def apply[S] = for
         arr    <- STArray.fromList(xs)
         size   <- arr.size

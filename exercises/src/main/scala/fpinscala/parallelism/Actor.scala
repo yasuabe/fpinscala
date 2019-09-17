@@ -44,42 +44,37 @@ final class Actor[A](strategy: Strategy)(handler: A => Unit, onError: Throwable 
   private val head      = AtomicReference(tail.get)
 
   /** Alias for `apply` */
-  def !(a: A): Unit = {
+  def !(a: A): Unit =
     val n = Node(a)
     head.getAndSet(n).lazySet(n)
     trySchedule()
-  }
 
   /** Pass the message `a` to the mailbox of this actor */
-  def apply(a: A) = {
+  def apply(a: A) =
     this ! a
-  }
 
   def contramap[B](f: B => A): Actor[B] =
     Actor[B](strategy)((this ! f(_)), onError)
 
-  private def trySchedule() = {
+  private def trySchedule() =
     if (suspended.compareAndSet(1, 0)) schedule()
-  }
 
-  private def schedule(): () => Any = {
+  private def schedule(): () => Any =
     strategy(act())
-  }
 
-  private def act() = {
+  private def act() =
     val t = tail.get
     val n = batchHandle(t, 1024)
-    if (n ne t) {
+    if n ne t then
       n.a = null.asInstanceOf[A]
       tail.lazySet(n)
       schedule()
-    } else
+    else
       suspended.set(1)
       if (n.get ne null) trySchedule()
-  }
 
   @tailrec
-  private def batchHandle(t: Node[A], i: Int): Node[A] = {
+  private def batchHandle(t: Node[A], i: Int): Node[A] =
     val n = t.get
     if n ne null then
       try
@@ -89,7 +84,7 @@ final class Actor[A](strategy: Strategy)(handler: A => Unit, onError: Throwable 
 
       if i > 0 then batchHandle(n, i - 1) else n
     else t
-  }
+
   def this(es: ExecutorService)(handler: A => Unit, onError: Throwable => Unit = throw(_)) =
     this(Strategy.fromExecutorService(es))(handler, onError)
 }
@@ -113,20 +108,18 @@ object Strategy {
    * convenient than submitting `Callable` objects directly.
    */
   def fromExecutorService(es: ExecutorService): Strategy = new Strategy {
-    def apply[A](a: => A): () => A = {
+    def apply[A](a: => A): () => A =
       val f = es.submit { new Callable[A] { def call = a} }
       () => f.get
-    }
   }
 
   /**
    * A `Strategy` which begins executing its argument immediately in the calling thread.
    */
   def sequential: Strategy = new Strategy {
-    def apply[A](a: => A): () => A = {
+    def apply[A](a: => A): () => A =
       val r = a
       () => r
-    }
   }
 }
 

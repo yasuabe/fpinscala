@@ -300,7 +300,7 @@ object SimpleStreamTransducers {
     /* For comparison, here is an explicit recursive implementation. */
     def count2[I]: Process[I,Int] = {
       def go(n: Int): Process[I,Int] =
-        await((i: I) => emit(n+1, go(n+1)))
+        await(_ => emit(n + 1, go(n + 1)))
       go(0)
     }
 
@@ -310,8 +310,8 @@ object SimpleStreamTransducers {
     def mean: Process[Double,Double] = ???
 
     def loop[S,I,O](z: S)(f: (I,S) => (O,S)): Process[I,O] =
-      await((i: I) => f(i,z) match {
-        case (o,s2) => emit(o, loop(s2)(f))
+      await(f(_, z) match {
+        case (o, s2) => emit(o, loop(s2)(f))
       })
 
     /* Exercise 4: Implement `sum` and `count` in terms of `loop` */
@@ -353,7 +353,7 @@ object SimpleStreamTransducers {
     def ignore[I,O]: Process[I,O] = skip.repeat
 
     def terminated[I]: Process[I,Option[I]] =
-      await((i: I) => emit(Some(i), terminated[I]), emit(None))
+      await(i => emit(Some(i), terminated[I]), emit(None))
 
     def processFile[A,B](f: java.io.File,
                          p: Process[String, A],
@@ -672,7 +672,7 @@ object GeneralizedStreamTransducers {
      */
 
     import java.io.{BufferedReader,FileReader}
-    val p: Process[IO, String] =
+    val p =
       await(IO(BufferedReader(FileReader("lines.txt")))) {
         case Right(b) =>
           lazy val next: Process[IO,String] = await(IO(b.readLine)) {
@@ -763,7 +763,7 @@ object GeneralizedStreamTransducers {
     def halt1[I,O]: Process1[I,O] = Halt[Is[I]#f, O](End)
 
     def lift[I,O](f: I => O): Process1[I,O] =
-      await1[I,O]((i:I) => emit(f(i))) repeat
+      await1[I,O](i => emit(f(i))) repeat
 
     def filter[I](f: I => Boolean): Process1[I,I] =
       await1[I,I](i => if f(i) then emit(i) else halt1) repeat
@@ -784,8 +784,7 @@ object GeneralizedStreamTransducers {
         if f(i) then dropWhile(f)
         else         emit(i,id))
 
-    def id[I]: Process1[I,I] =
-      await1((i: I) => emit(i, id))
+    def id[I]: Process1[I,I] = await1(emit(_, id))
 
     def window2[I]: Process1[I,(Option[I],I)] = {
       def go(prev: Option[I]): Process1[I,(Option[I],I)] =

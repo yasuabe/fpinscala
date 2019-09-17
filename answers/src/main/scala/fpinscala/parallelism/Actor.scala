@@ -57,7 +57,7 @@ final class Actor[A](strategy: Strategy)(handler: A => Unit, onError: Throwable 
   }
 
   def contramap[B](f: B => A): Actor[B] =
-    Actor[B](strategy)((b: B) => (this ! f(b)), onError)
+    Actor[B](strategy)(b => (this ! f(b)), onError)
 
   private def trySchedule() = {
     if (suspended.compareAndSet(1, 0)) schedule()

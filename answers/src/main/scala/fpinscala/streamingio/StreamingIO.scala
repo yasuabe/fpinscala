@@ -136,12 +136,12 @@ object SimpleStreamTransducers {
      */
     def |>[O2](p2: Process[O,O2]): Process[I,O2] =
       p2 match
-        case Halt() => Halt()
-        case Emit(h,t) => Emit(h, this |> t)
-        case Await(f) => this match
-          case Emit(h,t) => t |> f(Some(h))
-          case Halt() => Halt() |> f(None)
-          case Await(g) => Await((i: Option[I]) => g(i) |> p2)
+        case Halt()     => Halt()
+        case Emit(h, t) => Emit(h, this |> t)
+        case Await(f)   => this match
+          case Emit(h, t) => t |> f(Some(h))
+          case Halt()     => Halt() |> f(None)
+          case Await(g)   => Await(i => g(i) |> p2)
 
     /*
      * Feed `in` to this `Process`. Uses a tail recursive loop as long
@@ -331,7 +331,7 @@ object SimpleStreamTransducers {
     /* For comparison, here is an explicit recursive implementation. */
     def count2[I]: Process[I,Int] = {
       def go(n: Int): Process[I,Int] =
-        await((i: I) => emit(n+1, go(n+1)))
+        await(i => emit(n + 1, go(n + 1)))
       go(0)
     }
 
@@ -343,22 +343,22 @@ object SimpleStreamTransducers {
      */
     def mean: Process[Double,Double] = {
       def go(sum: Double, count: Double): Process[Double,Double] =
-        await((d: Double) => emit((sum+d) / (count+1), go(sum+d,count+1)))
+        await(d => emit((sum + d) / (count + 1), go(sum + d,count + 1)))
       go(0.0, 0.0)
     }
 
     def loop[S,I,O](z: S)(f: (I,S) => (O,S)): Process[I,O] =
-      await((i: I) => f(i,z) match {
+      await(i => f(i,z) match {
         case (o,s2) => emit(o, loop(s2)(f))
       })
 
     /* Exercise 4: Implement `sum` and `count` in terms of `loop` */
 
     def sum2: Process[Double,Double] =
-      loop(0.0)((d:Double, acc) => (acc+d,acc+d))
+      loop(0.0)((d, acc) => (acc + d, acc + d))
 
     def count3[I]: Process[I,Int] =
-      loop(0)((_:I,n) => (n+1,n+1))
+      loop(0)((_, n) => (n + 1,n + 1))
 
     /*
      * Exercise 7: Can you think of a generic combinator that would
@@ -371,13 +371,11 @@ object SimpleStreamTransducers {
      */
     def zip[A,B,C](p1: Process[A,B], p2: Process[A,C]): Process[A,(B,C)] =
       (p1, p2) match
-        case (Halt(), _) => Halt()
-        case (_, Halt()) => Halt()
-        case (Emit(b, t1), Emit(c, t2)) => Emit((b,c), zip(t1, t2))
-        case (Await(recv1), _) =>
-          Await((oa: Option[A]) => zip(recv1(oa), feed(oa)(p2)))
-        case (_, Await(recv2)) =>
-          Await((oa: Option[A]) => zip(feed(oa)(p1), recv2(oa)))
+        case (Halt(),       _           ) => Halt()
+        case (_,            Halt()      ) => Halt()
+        case (Emit(b, t1),  Emit(c, t2) ) => Emit((b, c), zip(t1, t2))
+        case (Await(recv1), _           ) => Await(oa => zip(recv1(oa), feed(oa)(p2)))
+        case (_,            Await(recv2)) => Await(oa => zip(feed(oa)(p1), recv2(oa)))
 
     def feed[A,B](oa: Option[A])(p: Process[A,B]): Process[A,B] =
       p match
@@ -408,7 +406,7 @@ object SimpleStreamTransducers {
 
     /* Emits whether a `true` input has ever been received. */
     def any: Process[Boolean,Boolean] =
-      loop(false)((b:Boolean,s) => (s || b, s || b))
+      loop(false)((b, s) => (s || b, s || b))
 
     /* A trimmed `exists`, containing just the final result. */
     def existsResult[I](f: I => Boolean) =
@@ -428,7 +426,7 @@ object SimpleStreamTransducers {
     def ignore[I,O]: Process[I,O] = skip.repeat
 
     def terminated[I]: Process[I,Option[I]] =
-      await((i: I) => emit(Some(i), terminated[I]), emit(None))
+      await(i => emit(Some(i), terminated[I]), emit(None))
 
     def processFile[A,B](f: java.io.File,
                          p: Process[String, A],
@@ -767,7 +765,7 @@ object GeneralizedStreamTransducers {
      */
 
     import java.io.{BufferedReader,FileReader}
-    val p: Process[IO, String] =
+    val p =
       await(IO(BufferedReader(FileReader("lines.txt")))) {
         case Right(b) =>
           lazy val next: Process[IO,String] = await(IO(b.readLine)) {
@@ -787,7 +785,7 @@ object GeneralizedStreamTransducers {
     def resource[R,O](acquire: IO[R])(
                       use: R => Process[IO,O])(
                       release: R => Process[IO,O]): Process[IO,O] =
-      eval(acquire) flatMap { r => use(r).onComplete(release(r)) }
+      eval(acquire) flatMap (r => use(r).onComplete(release(r)))
 
     /*
      * Like `resource`, but `release` is a single `IO` action.
@@ -851,10 +849,10 @@ object GeneralizedStreamTransducers {
     def await1[I,O](
         recv: I => Process1[I,O],
         fallback: => Process1[I,O] = halt1[I,O]): Process1[I, O] =
-      Await(Get[I], (e: Either[Throwable,I]) => e match {
+      Await(Get[I], _ match {
         case Left(End) => fallback
         case Left(err) => Halt(err)
-        case Right(i) => Try(recv(i))
+        case Right(i)  => Try(recv(i))
       })
 
     def emit1[I,O](h: O, tl: Process1[I,O] = halt1[I,O]): Process1[I,O] =
@@ -863,7 +861,7 @@ object GeneralizedStreamTransducers {
     def halt1[I,O]: Process1[I,O] = Halt[Is[I]#f, O](End)
 
     def lift[I,O](f: I => O): Process1[I,O] =
-      await1[I,O]((i:I) => emit(f(i))) repeat
+      await1[I,O](i => emit(f(i))) repeat
 
     def filter[I](f: I => Boolean): Process1[I,I] =
       await1[I,I](i => if f(i) then emit(i) else halt1) repeat
@@ -884,8 +882,7 @@ object GeneralizedStreamTransducers {
         if f(i) then dropWhile(f)
         else         emit(i,id))
 
-    def id[I]: Process1[I,I] =
-      await1((i: I) => emit(i, id))
+    def id[I]: Process1[I,I] = await1(emit(_, id))
 
     def window2[I]: Process1[I,(Option[I],I)] = {
       def go(prev: Option[I]): Process1[I,(Option[I],I)] =

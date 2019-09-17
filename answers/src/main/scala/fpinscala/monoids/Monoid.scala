@@ -84,8 +84,7 @@ object Monoid {
     yield (x, y, z))(p =>
       (p._1 op (p._2 op p._3)) == ((p._1 op p._2) op p._3)) &&
     // Identity
-    forAll(gen)((a: A) =>
-      (a op m.zero) == a && (m.zero op a) == a)
+    forAll(gen)(a => (a op m.zero) == a && (m.zero op a) == a)
 
   def concatenate[A](as: List[A]) given (m: Monoid[A]): A =
     as.foldLeft(m.zero)(_ op _)
@@ -202,7 +201,7 @@ object Monoid {
 
 
   def bag[A](as: IndexedSeq[A]): Map[A, Int] =
-    foldMapV(as)((a: A) => Map(a -> 1)) given (mapMergeMonoid[A, Int] given intAddition)
+    foldMapV(as)(a => Map(a -> 1)) given (mapMergeMonoid[A, Int] given intAddition)
 
 }
 

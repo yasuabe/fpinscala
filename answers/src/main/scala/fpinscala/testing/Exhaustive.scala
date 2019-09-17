@@ -91,7 +91,7 @@ object Prop {
       val casesPerSize = n / max + 1
       val props: List[Prop] =
         Stream.from(0).take(max+1).map(i => forAll(g(i))(f)).toList
-      val p: Prop = props.map(p => Prop((max,n,rng) => p.run(max,casesPerSize,rng))).
+      val p = props.map(p => Prop((max, n, rng) => p.run(max, casesPerSize, rng))).
             reduceLeft(_ && _)
       p.run(max,n,rng).map {
         case (Proven,n) => (Exhausted,n)

@@ -175,22 +175,22 @@ trait Traverse[F[?]] extends Functor[F] with Foldable[F] { self =>
     traverse[[X] =>> State[S, X], A, B](fa)(f)(Monad.stateMonad)
 
   def zipWithIndex_[A](ta: F[A]): F[(A,Int)] =
-    traverseS(ta)((a: A) => (for
+    traverseS(ta)(a => (for
       i <- get[Int]
       _ <- set(i + 1)
     yield (a, i))).run(0)._1
 
   def toList_[A](fa: F[A]): List[A] =
-    traverseS(fa)((a: A) => (for
+    traverseS(fa)(a => (for
       as <- get[List[A]] // Get the current state, the accumulated list.
       _  <- set(a :: as) // Add the current element and set the new list as the new state.
     yield ())).run(Nil)._2.reverse
 
   def mapAccum[S,A,B](fa: F[A], s: S)(f: (A, S) => (B, S)): (F[B], S) =
-    traverseS(fa)((a: A) => (for
-      s1 <- get[S]
-      (b, s2) = f(a, s1)
-      _  <- set(s2)
+    traverseS(fa)(a => (for
+      s1      <- get[S]
+      (b, s2) =  f(a, s1)
+      _       <- set(s2)
     yield b)).run(s)
 
   override def toList[A](fa: F[A]): List[A] =

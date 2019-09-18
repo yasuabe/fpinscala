@@ -52,12 +52,10 @@ trait Monad[F[?]] extends Functor[F] {
 
   // syntax
   given toMonadic[A] as Conversion[F[A], Monadic[F, A]] =
-    a => new Monadic[F, A] { val F = Monad.this; def get = a }
+    a => new Monadic[F, A](Monad.this) { def get = a }
 }
 
-trait Monadic[F[?], A] { // TODO: try trait parameter
-  val F: Monad[F]
-  import F._
+trait Monadic[F[?], A](F: Monad[F]) {
   def get: F[A]
   private val a = get
   def map[B](f: A => B): F[B] = F.map(a)(f)

@@ -17,7 +17,7 @@ object Par {
     def cancel(evenIfRunning: Boolean): Boolean = false 
   }
   
-  def map2[A,B,C](a: Par[A], b: Par[B])(f: (A,B) => C): Par[C] = // `map2` doesn't evaluate the call to `f` in a separate logical thread, in accord with our design choice of having `fork` be the sole function in the API for controlling parallelism. We can always do `fork(map2(a,b)(f))` if we want the evaluation of `f` to occur in a separate thread.
+  def map2[A, B, C](a: Par[A], b: Par[B])(f: (A, B) => C): Par[C] = // `map2` doesn't evaluate the call to `f` in a separate logical thread, in accord with our design choice of having `fork` be the sole function in the API for controlling parallelism. We can always do `fork(map2(a, b)(f))` if we want the evaluation of `f` to occur in a separate thread.
     (es: ExecutorService) => {
       val af = a(es) 
       val bf = b(es)
@@ -29,8 +29,8 @@ object Par {
       def call = a(es).get
     })
 
-  def map[A,B](pa: Par[A])(f: A => B): Par[B] = 
-    map2(pa, unit(()))((a,_) => f(a))
+  def map[A, B](pa: Par[A])(f: A => B): Par[B] = 
+    map2(pa, unit(()))((a, _) => f(a))
 
   def sortPar(parList: Par[List[Int]]) = map(parList)(_.sorted)
 
@@ -48,8 +48,8 @@ object Par {
   /* Gives us infix syntax for `Par`. */
   given ParOps[A](p: Par[A]) {
     def map[B](f: A => B): Par[B] = ???
-    def map2[B,C](b: Par[B])(f: (A,B) => C): Par[C] = ???
-    def zip[B](b: Par[B]): Par[(A,B)] = ???
+    def map2[B, C](b: Par[B])(f: (A, B) => C): Par[C] = ???
+    def zip[B](b: Par[B]): Par[(A, B)] = ???
   }
 }
 
@@ -59,6 +59,6 @@ object Examples {
     if (ints.size <= 1)
       ints.headOption getOrElse 0 // `headOption` is a method defined on all collections in Scala. We saw this function in chapter 3.
     else
-      val (l,r) = ints.splitAt(ints.length/2) // Divide the sequence in half using the `splitAt` function.
+      val (l, r) = ints.splitAt(ints.length/2) // Divide the sequence in half using the `splitAt` function.
       sum(l) + sum(r) // Recursively sum both halves and add the results together.
 }

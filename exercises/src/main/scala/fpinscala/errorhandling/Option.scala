@@ -39,7 +39,7 @@ object Option {
 
   def variance(xs: Seq[Double]): Option[Double] = sys.error("todo")
 
-  def map2[A,B,C](a: Option[A], b: Option[B])(f: (A, B) => C): Option[C] = sys.error("todo")
+  def map2[A, B, C](a: Option[A], b: Option[B])(f: (A, B) => C): Option[C] = sys.error("todo")
 
   def sequence[A](a: List[Option[A]]): Option[List[A]] = sys.error("todo")
 

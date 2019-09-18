@@ -14,14 +14,14 @@ trait Throw[+A] {
 
   @annotation.tailrec
   final def run: A = this match
-    case Done(a) => a
+    case Done(a)     => a
     case More(thunk) => force(thunk).run
 }
 
 object Throw extends Monad[Throw] {
 
   /* Exception indicating that the central loop should call `f(a)`. */
-  case class Call[A,+B] private[Throw] (a: A, f: A => B) extends Exception {
+  case class Call[A, +B] private[Throw] (a: A, f: A => B) extends Exception {
     override def fillInStackTrace = this
   }
 
@@ -29,11 +29,11 @@ object Throw extends Monad[Throw] {
   case class More[+A](thunk: () => Throw[A]) extends Throw[A]
 
   /* Defer evaluation of `f(a)` to the central evaluation loop. */
-  def defer[A,B](a: A)(f: A => B): B =
+  def defer[A, B](a: A)(f: A => B): B =
     throw Call(a, f)
 
   /* Central evaluation loop. */
-  def ap[A,B](a: A)(f: A => B): B =
+  def ap[A, B](a: A)(f: A => B): B =
     var ai: Any = a
     var fi: Any => Any = f.asInstanceOf[Any => Any]
     while true do
@@ -53,13 +53,12 @@ object Throw extends Monad[Throw] {
 
   def unit[A](a: => A): Throw[A] = more(Done(a))
 
-  def flatMap[A,B](a: Throw[A])(f: A => Throw[B]): Throw[B] =
+  def flatMap[A, B](a: Throw[A])(f: A => Throw[B]): Throw[B] =
     a match
-      case Done(a) => f(a)
+      case Done(a)     => f(a)
       case More(thunk) =>
-        try thunk() flatMap f
-        catch { case Call(a0,g) => more {
-          defer(a0)(g.asInstanceOf[Any => Throw[A]].
-                    andThen(_ flatMap f))
-        }}
+        try thunk() flatMap f catch
+          case Call(a0, g) => more {
+            defer(a0)(g.asInstanceOf[Any => Throw[A]] andThen (_ flatMap f))
+          }
 }

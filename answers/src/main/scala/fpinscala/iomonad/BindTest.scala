@@ -20,7 +20,7 @@ object BindTest extends App {
       (f1, f2) => for
         acc <- f1
         i   <- f2
-      yield (acc + i) // if (i == N) println("result: " + (acc+i))
+      yield (acc + i) // if (i == N) println("result: " + (acc + i))
     ))
 
   import fpinscala.parallelism.Nonblocking._
@@ -28,7 +28,7 @@ object BindTest extends App {
 
   object ParMonad extends Monad[Par] {
     def unit[A](a: => A) = Par.unit(a)
-    def flatMap[A,B](pa: Par[A])(f: A => Par[B]) = Par.fork { Par.flatMap(pa)(f) }
+    def flatMap[A, B](pa: Par[A])(f: A => Par[B]) = Par.fork { Par.flatMap(pa)(f) }
   }
 
   given Pool as ExecutorService = java.util.concurrent.Executors.newFixedThreadPool(4)

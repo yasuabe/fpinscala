@@ -5,15 +5,15 @@ enum Stream[+A] {
 
   def foldRight[B](z: => B)(f: (A, => B) => B): B = // The arrow `=>` in front of the argument type `B` means that the function `f` takes its second argument by name and may choose not to evaluate it.
     this match
-      case Cons(h,t) => f(h(), t().foldRight(z)(f)) // If `f` doesn't evaluate its second argument, the recursion never occurs.
-      case _ => z
+      case Cons(h, t) => f(h(), t().foldRight(z)(f)) // If `f` doesn't evaluate its second argument, the recursion never occurs.
+      case _          => z
 
   def exists(p: A => Boolean): Boolean = 
     foldRight(false)((a, b) => p(a) || b) // Here `b` is the unevaluated recursive step that folds the tail of the stream. If `p(a)` returns `true`, `b` will never be evaluated and the computation terminates early.
 
   @annotation.tailrec
   final def find(f: A => Boolean): Option[A] = this match
-    case Empty => None
+    case Empty      => None
     case Cons(h, t) => if f(h()) then Some(h()) else t().find(f)
 
   def take(n: Int): Stream[A] = sys.error("todo")

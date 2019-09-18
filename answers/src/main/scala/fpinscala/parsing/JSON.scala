@@ -20,10 +20,10 @@ object JSON {
     import given P.operators, P.asStringParser
     given as Conversion[String, Parser[String]] = s => token(P.string(s))
 
-    def array = surround("[","]")(
-      value sep "," map (vs => JArray(vs.toIndexedSeq))) scope "array"
-    def obj = surround("{","}")(
-      keyval sep "," map (kvs => JObject(kvs.toMap))) scope "object"
+    def array = surround("[", "]")(
+      value sep ", " map (vs => JArray(vs.toIndexedSeq))) scope "array"
+    def obj = surround("{", "}")(
+      keyval sep ", " map (kvs => JObject(kvs.toMap))) scope "object"
     def keyval = escapedQuoted ** (ParserOps(":") *> value)
     def lit = scope("literal") {
       "null".as(JNull) |
@@ -69,7 +69,7 @@ object JSONExample extends App {
   val P = fpinscala.parsing.Reference
   import fpinscala.parsing.ReferenceTypes.Parser
 
-  def printResult[E](e: Either[E,JSON]) =
+  def printResult[E](e: Either[E, JSON]) =
     e.fold(println, println)
 
   val json: Parser[JSON] = JSON.jsonParser[Parser](P)

@@ -126,8 +126,8 @@ object Monoid {
           // The ranges should not overlap if the sequence is ordered.
           case (Some((x1, y1, p)), Some((x2, y2, q))) =>
             Some((x1 min x2, y1 max y2, p && q && y1 <= x2))
-          case (x, None) => x
-          case (None, x) => x
+          case (x,    None) => x
+          case (None, x   ) => x
 
       val zero = None
     }
@@ -143,7 +143,7 @@ object Monoid {
   }
 
   // we perform the mapping and the reducing both in parallel
-  def parFoldMap[A,B](v: IndexedSeq[A])(f: A => B) given (m: Monoid[B]): Par[B] =
+  def parFoldMap[A, B](v: IndexedSeq[A])(f: A => B) given (m: Monoid[B]): Par[B] =
     Par.parMap(v)(f).flatMap(foldMapV(_)(Par.lazyUnit))
 
   enum WC {
@@ -157,9 +157,9 @@ object Monoid {
     val zero = Stub("")
 
     def op(a: WC, b: WC) = (a, b) match
-      case (Stub(c), Stub(d)) => Stub(c + d)
-      case (Stub(c), Part(l, w, r)) => Part(c + l, w, r)
-      case (Part(l, w, r), Stub(c)) => Part(l, w, r + c)
+      case (Stub(c), Stub(d))                   => Stub(c + d)
+      case (Stub(c), Part(l, w, r))             => Part(c + l, w, r)
+      case (Part(l, w, r), Stub(c))             => Part(l, w, r + c)
       case (Part(l1, w1, r1), Part(l2, w2, r2)) =>
         Part(l1, w1 + (if ((r1 + l2).isEmpty) 0 else 1) + w2, r2)
   }
@@ -172,24 +172,24 @@ object Monoid {
     // `unstub(s)` is 0 if `s` is empty, otherwise 1.
     def unstub(s: String) = s.length min 1
     foldMapV(s.toIndexedSeq)(wc) given wcMonoid match
-      case Stub(s) => unstub(s)
+      case Stub(s)       => unstub(s)
       case Part(l, w, r) => unstub(l) + w + unstub(r)
 
-  given productMonoid[A,B] as Monoid[(A, B)] given (A: Monoid[A], B: Monoid[B]) {
+  given productMonoid[A, B] as Monoid[(A, B)] given (A: Monoid[A], B: Monoid[B]) {
     def (x: (A, B)) op (y: (A, B)) =
       (A.op(x._1)(y._1), B.op(x._2)(y._2))
     val zero = (A.zero, B.zero)
   }
 
-  given functionMonoid[A,B] as Monoid[A => B] given (B: Monoid[B]) {
+  given functionMonoid[A, B] as Monoid[A => B] given (B: Monoid[B]) {
     def (f: A => B) op (g: A => B) = (a: A) => f(a) op g(a)
     val zero: A => B = a => B.zero
   }
 
-  given mapMergeMonoid[K,V] as Monoid[Map[K, V]] given (V: Monoid[V]) {
-    def zero = Map[K,V]()
+  given mapMergeMonoid[K, V] as Monoid[Map[K, V]] given (V: Monoid[V]) {
+    def zero = Map[K, V]()
     def (a: Map[K, V]) op (b: Map[K, V]) =
-      (a.keySet ++ b.keySet).foldLeft(zero) { (acc,k) =>
+      (a.keySet ++ b.keySet).foldLeft(zero) { (acc, k) =>
         acc.updated(k, a.getOrElse(k, V.zero) op b.getOrElse(k, V.zero))
       }
   }
@@ -203,10 +203,10 @@ object Monoid {
 trait Foldable[F[?]] {
   import Monoid._
 
-  def foldRight[A,B](as: F[A])(z: B)(f: (A, B) => B): B =
+  def foldRight[A, B](as: F[A])(z: B)(f: (A, B) => B): B =
     (foldMap(as)(f.curried) given endoMonoid[B])(z)
 
-  def foldLeft[A,B](as: F[A])(z: B)(f: (B, A) => B): B =
+  def foldLeft[A, B](as: F[A])(z: B)(f: (B, A) => B): B =
     (foldMap(as)(a => (b: B) => f(b, a)) given (dual given endoMonoid[B]))(z)
 
   def foldMap[A, B](as: F[A])(f: A => B) given (mb: Monoid[B]): B =
@@ -254,15 +254,15 @@ import Tree._
 
 object TreeFoldable extends Foldable[Tree] {
   override def foldMap[A, B](as: Tree[A])(f: A => B) given (mb: Monoid[B]): B = as match
-    case Leaf(a) => f(a)
+    case Leaf(a)      => f(a)
     case Branch(l, r) =>foldMap(l)(f) op foldMap(r)(f)
 
   override def foldLeft[A, B](as: Tree[A])(z: B)(f: (B, A) => B) = as match
-    case Leaf(a) => f(z, a)
+    case Leaf(a)      => f(z, a)
     case Branch(l, r) => foldLeft(r)(foldLeft(l)(z)(f))(f)
 
   override def foldRight[A, B](as: Tree[A])(z: B)(f: (A, B) => B) = as match
-    case Leaf(a) => f(a, z)
+    case Leaf(a)      => f(a, z)
     case Branch(l, r) => foldRight(l)(foldRight(r)(z)(f))(f)
 }
 
@@ -276,15 +276,15 @@ object TreeFoldable extends Foldable[Tree] {
 object OptionFoldable extends Foldable[Option] {
   override def foldMap[A, B](as: Option[A])(f: A => B) given (mb: Monoid[B]): B =
     as match
-      case None => mb.zero
+      case None    => mb.zero
       case Some(a) => f(a)
 
   override def foldLeft[A, B](as: Option[A])(z: B)(f: (B, A) => B) = as match
-    case None => z
+    case None    => z
     case Some(a) => f(z, a)
 
   override def foldRight[A, B](as: Option[A])(z: B)(f: (A, B) => B) = as match
-    case None => z
+    case None    => z
     case Some(a) => f(a, z)
 }
 

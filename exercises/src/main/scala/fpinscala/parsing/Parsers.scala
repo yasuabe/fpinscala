@@ -15,8 +15,8 @@ trait Parsers[Parser[+?]] { self => // so inner classes may call methods of trai
 
 case class Location(input: String, offset: Int = 0) {
 
-  lazy val line = input.slice(0,offset+1).count(_ == '\n') + 1
-  lazy val col = input.slice(0,offset+1).reverse.indexOf('\n')
+  lazy val line = input.slice(0, offset+1).count(_ == '\n') + 1
+  lazy val col = input.slice(0, offset+1).reverse.indexOf('\n')
 
   def toError(msg: String): ParseError =
     ParseError(List((this, msg)))
@@ -25,10 +25,10 @@ case class Location(input: String, offset: Int = 0) {
 
   /* Returns the line corresponding to this location */
   def currentLine: String = 
-    if input.length > 1 then input.linesIterator.drop(line-1).next
+    if input.length > 1 then input.linesIterator.drop(line - 1).next
     else ""
 }
 
-case class ParseError(stack: List[(Location,String)] = List(),
+case class ParseError(stack: List[(Location, String)] = List(),
                       otherFailures: List[ParseError] = List()) {
 }

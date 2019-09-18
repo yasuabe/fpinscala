@@ -1,7 +1,7 @@
 package fpinscala.parallelism
 
 import java.util.concurrent.atomic.{AtomicInteger, AtomicReference}
-import java.util.concurrent.{Callable,ExecutorService}
+import java.util.concurrent.{Callable, ExecutorService}
 import annotation.tailrec
 
 /*
@@ -78,9 +78,7 @@ final class Actor[A](strategy: Strategy)(handler: A => Unit, onError: Throwable 
   private def batchHandle(t: Node[A], i: Int): Node[A] =
     val n = t.get
     if n ne null then
-      try
-        handler(n.a)
-      catch
+      try handler(n.a) catch
         case ex: Throwable => onError(ex)
 
       if i > 0 then batchHandle(n, i - 1) else n

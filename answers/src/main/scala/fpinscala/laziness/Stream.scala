@@ -5,8 +5,8 @@ enum Stream[+A] {
 
   // The natural recursive solution
   def toListRecursive: List[A] = this match
-    case Cons(h,t) => h() :: t().toListRecursive
-    case _ => List()
+    case Cons(h, t) => h() :: t().toListRecursive
+    case _          => List()
 
   /*
   The above solution will stack overflow for large streams, since it's
@@ -36,7 +36,7 @@ enum Stream[+A] {
       case Cons(h, t) =>
         buf += h()
         go(t())
-      case _ => buf.toList
+      case _          => buf.toList
 
     go(this)
 
@@ -47,9 +47,9 @@ enum Stream[+A] {
     at the stream at all.
   */
   def take(n: Int): Stream[A] = this match
-    case Cons(h, t) if n > 1 => cons(h(), t().take(n - 1))
+    case Cons(h, t) if n > 1  => cons(h(), t().take(n - 1))
     case Cons(h, _) if n == 1 => cons(h(), empty)
-    case _ => empty
+    case _                    => empty
 
   /*
     Create a new Stream[A] from this, but ignore the n first elements. This can be achieved by recursively calling
@@ -110,9 +110,9 @@ enum Stream[+A] {
     }
 
   def takeViaUnfold(n: Int): Stream[A] =
-    unfold((this,n)) {
+    unfold((this, n)) {
       case (Cons(h, t), 1)          => Some((h(), (empty, 0)))
-      case (Cons(h, t), n) if n > 1 => Some((h(), (t(), n-1)))
+      case (Cons(h, t), n) if n > 1 => Some((h(), (t(), n - 1)))
       case _                        => None
     }
 
@@ -122,18 +122,18 @@ enum Stream[+A] {
       case _                    => None
     }
 
-  def zipWith[B,C](s2: Stream[B])(f: (A,B) => C): Stream[C] =
+  def zipWith[B, C](s2: Stream[B])(f: (A, B) => C): Stream[C] =
     unfold((this, s2)) {
-      case (Cons(h1, t1), Cons(h2,t2)) => Some((f(h1(), h2()), (t1(), t2())))
+      case (Cons(h1, t1), Cons(h2, t2)) => Some((f(h1(), h2()), (t1(), t2())))
       case _                           => None
     }
 
   // special case of `zipWith`
-  def zip[B](s2: Stream[B]): Stream[(A,B)] =
+  def zip[B](s2: Stream[B]): Stream[(A, B)] =
     zipWith(s2)((_, _))
 
 
-  def zipAll[B](s2: Stream[B]): Stream[(Option[A],Option[B])] =
+  def zipAll[B](s2: Stream[B]): Stream[(Option[A], Option[B])] =
     zipWithAll(s2)((_, _))
 
   def zipWithAll[B, C](s2: Stream[B])(f: (Option[A], Option[B]) => C): Stream[C] =
@@ -204,38 +204,38 @@ object Stream {
     tail
 
   def from(n: Int): Stream[Int] =
-    cons(n, from(n+1))
+    cons(n, from(n + 1))
 
   val fibs =
     def go(f0: Int, f1: Int): Stream[Int] =
-      cons(f0, go(f1, f0+f1))
+      cons(f0, go(f1, f0 + f1))
     go(0, 1)
 
   def unfold[A, S](z: S)(f: S => Option[(A, S)]): Stream[A] = f(z) match
-    case Some((h,s)) => cons(h, unfold(s)(f))
-    case None => empty
+    case Some((h, s)) => cons(h, unfold(s)(f))
+    case None         => empty
 
   /*
   The below two implementations use `fold` and `map` functions in the Option class to implement unfold, thereby doing away with the need to manually pattern match as in the above solution.
    */
   def unfoldViaFold[A, S](z: S)(f: S => Option[(A, S)]): Stream[A] =
-    f(z).fold(empty[A])((p1, p2) => cons(p1,unfold(p2)(f)))
+    f(z).fold(empty[A])((p1, p2) => cons(p1, unfold(p2)(f)))
 
   def unfoldViaMap[A, S](z: S)(f: S => Option[(A, S)]): Stream[A] =
-    f(z).map((p1, p2) => cons(p1,unfold(p2)(f))).getOrElse(empty[A])
+    f(z).map((p1, p2) => cons(p1, unfold(p2)(f))).getOrElse(empty[A])
 
   /*
-  Scala provides shorter syntax when the first action of a function literal is to match on an expression.  The function passed to `unfold` in `fibsViaUnfold` is equivalent to `p => p match { case (f0,f1) => ... }`, but we avoid having to choose a name for `p`, only to pattern match on it.
+  Scala provides shorter syntax when the first action of a function literal is to match on an expression.  The function passed to `unfold` in `fibsViaUnfold` is equivalent to `p => p match { case (f0, f1) => ... }`, but we avoid having to choose a name for `p`, only to pattern match on it.
   */
   val fibsViaUnfold =
     unfold((0, 1))((f0, f1) => Some((f0, (f1, f0 + f1))))
 
   def fromViaUnfold(n: Int) =
-    unfold(n)(n => Some((n,n+1)))
+    unfold(n)(n => Some((n, n + 1)))
 
   def constantViaUnfold[A](a: A) =
-    unfold(a)(_ => Some((a,a)))
+    unfold(a)(_ => Some((a, a)))
 
   // could also of course be implemented as constant(1)
-  val onesViaUnfold = unfold(1)(_ => Some((1,1)))
+  val onesViaUnfold = unfold(1)(_ => Some((1, 1)))
 }

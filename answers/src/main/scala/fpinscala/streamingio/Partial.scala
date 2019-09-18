@@ -7,7 +7,7 @@ import language.higherKinds
  * thrown. 
  */
 trait Partial[F[?]] { 
-  def attempt[A](a: F[A]): F[Either[Throwable,A]]
+  def attempt[A](a: F[A]): F[Either[Throwable, A]]
   def fail[A](t: Throwable): F[A]
 }
 

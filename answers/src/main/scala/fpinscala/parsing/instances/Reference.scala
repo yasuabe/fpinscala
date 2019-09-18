@@ -23,28 +23,28 @@ object ReferenceTypes {
 
   /* Likewise, we define a few helper functions on `Result`. */
   enum Result[+A] {
-    def extract: Either[ParseError,A] = this match
-      case Failure(e,_) => Left(e)
-      case Success(a,_) => Right(a)
+    def extract: Either[ParseError, A] = this match
+      case Failure(e, _) => Left(e)
+      case Success(a, _) => Right(a)
 
     /* Used by `attempt`. */
     def uncommit: Result[A] = this match
-      case Failure(e,true) => Failure(e,false)
-      case _ => this
+      case Failure(e, true) => Failure(e, false)
+      case _                => this
 
     /* Used by `flatMap` */
     def addCommit(isCommitted: Boolean): Result[A] = this match
-      case Failure(e,c) => Failure(e, c || isCommitted)
-      case _ => this
+      case Failure(e, c) => Failure(e, c || isCommitted)
+      case _             => this
 
     /* Used by `scope`, `label`. */
     def mapError(f: ParseError => ParseError): Result[A] = this match
-      case Failure(e,c) => Failure(f(e),c)
-      case _ => this
+      case Failure(e, c) => Failure(f(e), c)
+      case _             => this
 
     def advanceSuccess(n: Int): Result[A] = this match
-      case Success(a,m) => Success(a,n+m)
-      case _ => this
+      case Success(a, m) => Success(a, n + m)
+      case _             => this
 
     case Success(get: A, length: Int)
     case Failure(get: ParseError, isCommitted: Boolean) extends Result[A]
@@ -56,17 +56,17 @@ object ReferenceTypes {
   def firstNonmatchingIndex(s1: String, s2: String, offset: Int): Int =
     var i = 0
     while i < s1.length && i < s2.length do
-      if (s1.charAt(i+offset) != s2.charAt(i)) return i
+      if (s1.charAt(i + offset) != s2.charAt(i)) return i
       i += 1
 
-    if s1.length-offset >= s2.length then -1
-    else s1.length-offset
+    if s1.length - offset >= s2.length then -1
+    else s1.length - offset
 }
 
 object Reference extends Parsers[Parser] {
   import ReferenceTypes.Result._
 
-  def run[A](p: Parser[A])(s: String): Either[ParseError,A] =
+  def run[A](p: Parser[A])(s: String): Either[ParseError, A] =
     val s0 = ParseState(Location(s))
     (p given s0).extract
 
@@ -77,7 +77,7 @@ object Reference extends Parsers[Parser] {
     case Failure(e, false) => p2
     case r                 => r // committed failure or success skips running `p2`
 
-  def flatMap[A,B](f: Parser[A])(g: A => Parser[B]): Parser[B] = f match
+  def flatMap[A, B](f: Parser[A])(g: A => Parser[B]): Parser[B] = f match
     case Success(a, n)   => (g(a) given the[ParseState].advanceBy(n))
                               .addCommit(n != 0)
                               .advanceSuccess(n)
@@ -97,7 +97,7 @@ object Reference extends Parsers[Parser] {
       case None    => Failure(the[ParseState].loc.toError("regex " + r), false)
 
   def scope[A](msg: String)(p: Parser[A]): Parser[A] =
-    p.mapError(_.push(the[ParseState].loc,msg))
+    p.mapError(_.push(the[ParseState].loc, msg))
 
   def label[A](msg: String)(p: Parser[A]): Parser[A] =
     p.mapError(_.label(msg))
@@ -121,7 +121,7 @@ object Reference extends Parsers[Parser] {
     val buf = collection.mutable.ListBuffer[A]()
     def go(p: Parser[A], offset: Int): Result[List[A]] =
       (p given the[ParseState].advanceBy(offset)) match
-        case Success(a, n)      => buf += a; go(p, offset+n)
+        case Success(a, n)      => buf += a; go(p, offset + n)
         case f@Failure(e, true) => f.asInstanceOf[Result[List[A]]]
         case Failure(e, _)      => Success(buf.toList, offset)
     go(p, 0)

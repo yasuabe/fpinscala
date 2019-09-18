@@ -6,32 +6,32 @@ import fpinscala.parallelism._
 import fpinscala.parallelism.Par.Par
 import Gen._
 import Prop._
-import java.util.concurrent.{Executors,ExecutorService}
+import java.util.concurrent.{Executors, ExecutorService}
 import language.postfixOps
 import language.implicitConversions
 import Result._
 
-case class Prop(run: (MaxSize,TestCases,RNG) => Result) {
+case class Prop(run: (MaxSize, TestCases, RNG) => Result) {
   def &&(p: Prop) = Prop {
-    (max,n,rng) => run(max,n,rng) match
+    (max, n, rng) => run(max, n, rng) match
       case Passed | Proved => p.run(max, n, rng)
-      case x => x
+      case x               => x
   }
 
   def ||(p: Prop) = Prop {
-    (max,n,rng) => run(max,n,rng) match
+    (max, n, rng) => run(max, n, rng) match
       // In case of failure, run the other prop.
-      case Falsified(msg, _) => p.tag(msg).run(max,n,rng)
-      case x => x
+      case Falsified(msg, _) => p.tag(msg).run(max, n, rng)
+      case x                 => x
   }
 
   /* This is rather simplistic - in the event of failure, we simply prepend
    * the given message on a newline in front of the existing message.
    */
   def tag(msg: String) = Prop {
-    (max,n,rng) => run(max,n,rng) match
+    (max, n, rng) => run(max, n, rng) match
       case Falsified(e, c) => Falsified(msg + "\n" + e, c)
-      case x => x
+      case x               => x
   }
 }
 
@@ -53,7 +53,7 @@ object Prop {
     Stream.unfold(rng)(rng => Some(g.sample.run(rng)))
 
   def forAll[A](as: Gen[A])(f: A => Boolean): Prop = Prop {
-    (n,rng) => randomStream(as)(rng).zip(Stream.from(0)).take(n).map { (a, i) =>
+    (n, rng) => randomStream(as)(rng).zip(Stream.from(0)).take(n).map { (a, i) =>
       try
         if f(a) then Passed else Falsified(a.toString, i)
       catch
@@ -70,14 +70,14 @@ object Prop {
     s"generated an exception: ${e.getMessage}\n" +
     s"stack trace:\n ${e.getStackTrace.mkString("\n")}"
 
-  def apply(f: (TestCases,RNG) => Result): Prop =
-    Prop { (_,n,rng) => f(n,rng) }
+  def apply(f: (TestCases, RNG) => Result): Prop =
+    Prop { (_, n, rng) => f(n, rng) }
 
   def forAll[A](g: SGen[A])(f: A => Boolean): Prop =
     forAll(g(_))(f)
 
   def forAll[A](g: Int => Gen[A])(f: A => Boolean): Prop = Prop {
-    (max,n,rng) =>
+    (max, n, rng) =>
       val casesPerSize = (n - 1) / max + 1
       val props: Stream[Prop] =
         Stream.from(0).take((n min max) + 1).map(i => forAll(g(i))(f))
@@ -85,7 +85,7 @@ object Prop {
         props.map(p => Prop { (max, n, rng) =>
           p.run(max, casesPerSize, rng)
         }).toList.reduce(_ && _)
-      prop.run(max,n,rng)
+      prop.run(max, n, rng)
   }
 
   def run(p: Prop,
@@ -115,7 +115,7 @@ object Prop {
   }
 
   def equal[A](p: Par[A], p2: Par[A]): Par[Boolean] =
-    Par.map2(p,p2)(_ == _)
+    Par.map2(p, p2)(_ == _)
 
   val p3 = check {
     equal (
@@ -125,33 +125,33 @@ object Prop {
   }
 
   val S = weighted(
-    choose(1,4).map(Executors.newFixedThreadPool) -> .75,
-    unit(Executors.newCachedThreadPool) -> .25) // `a -> b` is syntax sugar for `(a,b)`
+    choose(1, 4).map(Executors.newFixedThreadPool) -> .75,
+    unit(Executors.newCachedThreadPool) -> .25) // `a -> b` is syntax sugar for `(a, b)`
 
   def forAllPar[A](g: Gen[A])(f: A => Par[Boolean]): Prop =
-    forAll(S.map2(g)((_,_)))((s, a) => f(a)(s).get)
+    forAll(S.map2(g)((_, _)))((s, a) => f(a)(s).get)
 
   def checkPar(p: Par[Boolean]): Prop =
     forAllPar(Gen.unit(()))(_ => p)
 
   def forAllPar2[A](g: Gen[A])(f: A => Par[Boolean]): Prop =
-    forAll(S ** g)((s,a) => f(a)(s).get)
+    forAll(S ** g)((s, a) => f(a)(s).get)
 
   def forAllPar3[A](g: Gen[A])(f: A => Par[Boolean]): Prop =
     forAll(S ** g) { case s ** a => f(a)(s).get }
 
-  val pint = Gen.choose(0,10) map (Par.unit(_))
+  val pint = Gen.choose(0, 10) map (Par.unit(_))
   val p4 =
     forAllPar(pint)(n => equal(Par.map(n)(y => y), n))
 
   val forkProp = Prop.forAllPar(pint2)(i => equal(Par.fork(i), i)) tag "fork"
 }
 
-case class Gen[+A](sample: State[RNG,A]) {
+case class Gen[+A](sample: State[RNG, A]) {
   def map[B](f: A => B): Gen[B] =
     Gen(sample.map(f))
 
-  def map2[B,C](g: Gen[B])(f: (A,B) => C): Gen[C] =
+  def map2[B, C](g: Gen[B])(f: (A, B) => C): Gen[C] =
     Gen(sample.map2(g.sample)(f))
 
   def flatMap[B](f: A => Gen[B]): Gen[B] =
@@ -170,8 +170,8 @@ case class Gen[+A](sample: State[RNG,A]) {
 
   def unsized = SGen(_ => this)
 
-  def **[B](g: Gen[B]): Gen[(A,B)] =
-    (this map2 g)((_,_))
+  def **[B](g: Gen[B]): Gen[(A, B)] =
+    (this map2 g)((_, _))
 }
 
 object Gen {
@@ -197,25 +197,25 @@ object Gen {
    * integer in the range.
    */
   def even(start: Int, stopExclusive: Int): Gen[Int] =
-    choose(start, if stopExclusive%2 == 0 then stopExclusive - 1 else stopExclusive).
-    map (n => if n%2 != 0 then n+1 else n)
+    choose(start, if stopExclusive%2 == 0 then stopExclusive - 1 else stopExclusive)
+      .map (n => if n%2 != 0 then n + 1 else n)
 
   def odd(start: Int, stopExclusive: Int): Gen[Int] =
-    choose(start, if stopExclusive%2 != 0 then stopExclusive - 1 else stopExclusive).
-    map (n => if n%2 == 0 then n+1 else n)
+    choose(start, if stopExclusive%2 != 0 then stopExclusive - 1 else stopExclusive)
+      .map (n => if n%2 == 0 then n + 1 else n)
 
-  def sameParity(from: Int, to: Int): Gen[(Int,Int)] = for
-    i <- choose(from,to)
-    j <- if i%2 == 0 then even(from,to) else odd(from,to)
-  yield (i,j)
+  def sameParity(from: Int, to: Int): Gen[(Int, Int)] = for
+    i <- choose(from, to)
+    j <- if i%2 == 0 then even(from, to) else odd(from, to)
+  yield (i, j)
 
   def listOfN_1[A](n: Int, g: Gen[A]): Gen[List[A]] =
-    List.fill(n)(g).foldRight(unit(List[A]()))((a,b) => a.map2(b)(_ :: _))
+    List.fill(n)(g).foldRight(unit(List[A]()))((a, b) => a.map2(b)(_ :: _))
 
   def union[A](g1: Gen[A], g2: Gen[A]): Gen[A] =
     boolean.flatMap(b => if b then g1 else g2)
 
-  def weighted[A](g1: (Gen[A],Double), g2: (Gen[A],Double)): Gen[A] =
+  def weighted[A](g1: (Gen[A], Double), g2: (Gen[A], Double)): Gen[A] =
     /* The probability we should pull from `g1`. */
     val g1Threshold = g1._2.abs / (g1._2.abs + g2._2.abs)
 
@@ -228,13 +228,13 @@ object Gen {
    * This generates ASCII strings.
    */
   def stringN(n: Int): Gen[String] =
-    listOfN(n, choose(0,127)).map(_.map(_.toChar).mkString)
+    listOfN(n, choose(0, 127)).map(_.map(_.toChar).mkString)
 
   val string: SGen[String] = SGen(stringN)
 
   given unsized[A] as Conversion[Gen[A], SGen[A]] = g => SGen(_ => g)
 
-  val smallInt = Gen.choose(-10,10)
+  val smallInt = Gen.choose(-10, 10)
   val maxProp = forAll(listOf(smallInt)) { l =>
     val max = l.max
     !l.exists(_ > max) // No value greater than `max` should exist in `l`
@@ -249,14 +249,14 @@ object Gen {
   }
 
   // We specify that every sorted list is either empty, has one element,
-  // or has no two consecutive elements `(a,b)` such that `a` is greater than `b`.
+  // or has no two consecutive elements `(a, b)` such that `a` is greater than `b`.
   val sortedProp = forAll(listOf(smallInt)) { l =>
     val ls = l.sorted
     l.isEmpty || ls.tail.isEmpty || !ls.zip(ls.tail).exists(_ > _)
   }
 
   object ** {
-    def unapply[A,B](p: (A,B)) = Some(p)
+    def unapply[A, B](p: (A, B)) = Some(p)
   }
 
   /* A `Gen[Par[Int]]` generated from a list summation that spawns a new parallel
@@ -267,8 +267,8 @@ object Gen {
    * Note that this has to be a `lazy val` because of the way Scala initializes objects.
    * It depends on the `Prop` companion object being created, which references `pint2`.
    */
-  lazy val pint2: Gen[Par[Int]] = choose(-100,100).listOfN(choose(0,20)).map(l =>
-    l.foldLeft(Par.unit(0))((p,i) =>
+  lazy val pint2: Gen[Par[Int]] = choose(-100, 100).listOfN(choose(0, 20)).map(l =>
+    l.foldLeft(Par.unit(0))((p, i) =>
       Par.fork { Par.map2(p, Par.unit(i))(_ + _) }))
 
   def genStringIntFn(g: Gen[Int]): Gen[String => Int] =
@@ -286,7 +286,7 @@ case class SGen[+A](g: Int => Gen[A]) {
       g(n) flatMap (f(_).g(n))
     SGen(g2)
 
-  def **[B](s2: SGen[B]): SGen[(A,B)] =
+  def **[B](s2: SGen[B]): SGen[(A, B)] =
     SGen(n => apply(n) ** s2(n))
 }
 

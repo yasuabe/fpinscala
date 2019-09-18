@@ -5,11 +5,11 @@ import scala.{Option => _, Either => _, _}
 
 enum Option[+A] {
   def map[B](f: A => B): Option[B] = this match
-    case None => None
+    case None    => None
     case Some(a) => Some(f(a))
 
   def getOrElse[B>:A](default: => B): B = this match
-    case None => default
+    case None    => default
     case Some(a) => a
 
   def flatMap[B](f: A => Option[B]): Option[B] =
@@ -19,7 +19,7 @@ enum Option[+A] {
   Of course, we can also implement `flatMap` with explicit pattern matching.
   */
   def flatMap_1[B](f: A => Option[B]): Option[B] = this match
-    case None => None
+    case None    => None
     case Some(a) => f(a)
 
   def orElse[B>:A](ob: => Option[B]): Option[B] =
@@ -30,11 +30,11 @@ enum Option[+A] {
   */
   def orElse_1[B>:A](ob: => Option[B]): Option[B] = this match
     case None => ob
-    case _ => this
+    case _    => this
 
   def filter(f: A => Boolean): Option[A] = this match
     case Some(a) if f(a) => this
-    case _ => None
+    case _               => None
 
   /*
   This can also be defined in terms of `flatMap`.
@@ -75,7 +75,7 @@ object Option {
 
   // a bit later in the chapter we'll learn nicer syntax for
   // writing functions like this
-  def map2[A,B,C](a: Option[A], b: Option[B])(f: (A, B) => C): Option[C] =
+  def map2[A, B, C](a: Option[A], b: Option[B])(f: (A, B) => C): Option[C] =
     a flatMap (aa => b map (bb => f(aa, bb)))
 
   /*

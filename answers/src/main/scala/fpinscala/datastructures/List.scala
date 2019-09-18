@@ -23,7 +23,7 @@ object List { // `List` companion object. Contains functions for creating and wo
     if as.isEmpty then Nil
     else               Cons(as.head, apply(as.tail: _*))
 
-  val x = List(1,2,3,4,5) match
+  val x = List(1, 2, 3, 4, 5) match
     case Cons(x, Cons(2, Cons(4, _)))          => x
     case Nil                                   => 42
     case Cons(x, Cons(y, Cons(3, Cons(4, _)))) => x + y
@@ -32,9 +32,9 @@ object List { // `List` companion object. Contains functions for creating and wo
 
   def append[A](a1: List[A], a2: List[A]): List[A] = a1 match
     case Nil       => a2
-    case Cons(h,t) => Cons(h, append(t, a2))
+    case Cons(h, t) => Cons(h, append(t, a2))
 
-  def foldRight[A,B](as: List[A], z: B)(f: (A, B) => B): B = as match // Utility functions
+  def foldRight[A, B](as: List[A], z: B)(f: (A, B) => B): B = as match // Utility functions
     case Nil         => z
     case Cons(x, xs) => f(x, foldRight(xs, z)(f))
 
@@ -42,7 +42,7 @@ object List { // `List` companion object. Contains functions for creating and wo
     foldRight(ns, 0)(_ + _)
 
   def product2(ns: List[Double]) =
-    foldRight(ns, 1.0)(_ * _) // `_ * _` is more concise notation for `(x,y) => x * y`; see sidebar
+    foldRight(ns, 1.0)(_ * _) // `_ * _` is more concise notation for `(x, y) => x * y`; see sidebar
 
 
   /*
@@ -67,7 +67,7 @@ object List { // `List` companion object. Contains functions for creating and wo
   */
   def setHead[A](l: List[A], h: A): List[A] = l match
     case Nil        => sys.error("setHead on empty list")
-    case Cons(_, t) => Cons(h,t)
+    case Cons(_, t) => Cons(h, t)
 
   /*
   Again, it's somewhat subjective whether to throw an exception when asked to drop more elements than the list
@@ -128,10 +128,10 @@ object List { // `List` companion object. Contains functions for creating and wo
   is it replaces the `Nil` constructor of the list with the `z` argument, and it replaces the `Cons` constructor with
   the given function, `f`. If we just supply `Nil` for `z` and `Cons` for `f`, then we get back the input list.
 
-  foldRight(Cons(1, Cons(2, Cons(3, Nil))), Nil:List[Int])(Cons(_,_))
-  Cons(1, foldRight(Cons(2, Cons(3, Nil)), Nil:List[Int])(Cons(_,_)))
-  Cons(1, Cons(2, foldRight(Cons(3, Nil), Nil:List[Int])(Cons(_,_))))
-  Cons(1, Cons(2, Cons(3, foldRight(Nil, Nil:List[Int])(Cons(_,_)))))
+  foldRight(Cons(1, Cons(2, Cons(3, Nil))), Nil:List[Int])(Cons(_, _))
+  Cons(1, foldRight(Cons(2, Cons(3, Nil)), Nil:List[Int])(Cons(_, _)))
+  Cons(1, Cons(2, foldRight(Cons(3, Nil), Nil:List[Int])(Cons(_, _))))
+  Cons(1, Cons(2, Cons(3, foldRight(Nil, Nil:List[Int])(Cons(_, _)))))
   Cons(1, Cons(2, Cons(3, Nil)))
   */
 
@@ -144,7 +144,7 @@ object List { // `List` companion object. Contains functions for creating and wo
   in greater stack space usage at runtime.
   */
   @annotation.tailrec
-  def foldLeft[A,B](l: List[A], z: B)(f: (B, A) => B): B = l match
+  def foldLeft[A, B](l: List[A], z: B)(f: (B, A) => B): B = l match
     case Nil        => z
     case Cons(h, t) => foldLeft(t, f(z, h))(f)
 
@@ -163,16 +163,16 @@ object List { // `List` companion object. Contains functions for creating and wo
   The other implementations build up a chain of functions which, when called, results in the operations being performed
   with the correct associativity. We are calling `foldRight` with the `B` type being instantiated to `B => B`, then
   calling the built up function with the `z` argument. Try expanding the definitions by substituting equals for equals
-  using a simple example, like `foldLeft(List(1,2,3), 0)(_ + _)` if this isn't clear. Note these implementations are
+  using a simple example, like `foldLeft(List(1, 2, 3), 0)(_ + _)` if this isn't clear. Note these implementations are
   more of theoretical interest - they aren't stack-safe and won't work for large lists.
   */
-  def foldRightViaFoldLeft[A,B](l: List[A], z: B)(f: (A,B) => B): B =
+  def foldRightViaFoldLeft[A, B](l: List[A], z: B)(f: (A, B) => B): B =
     foldLeft(reverse(l), z)((b, a) => f(a, b))
 
-  def foldRightViaFoldLeft_1[A,B](l: List[A], z: B)(f: (A,B) => B): B =
+  def foldRightViaFoldLeft_1[A, B](l: List[A], z: B)(f: (A, B) => B): B =
     foldLeft(l, (b: B) => b)((g, a) => b => g(f(a, b)))(z)
 
-  def foldLeftViaFoldRight[A,B](l: List[A], z: B)(f: (B,A) => B): B =
+  def foldLeftViaFoldRight[A, B](l: List[A], z: B)(f: (B, A) => B): B =
     foldRight(l, (b: B) => b)((a, g) => b => g(f(b, a)))(z)
 
   /*
@@ -187,12 +187,12 @@ object List { // `List` companion object. Contains functions for creating and wo
   right-associativity of `foldRight`, this function is linear in the total length of all lists. You may want to try
   tracing the execution of the implementation on paper to convince yourself that this works.
 
-  Note that we're simply referencing the `append` function, without writing something like `(x,y) => append(x,y)`
-  or `append(_,_)`. In Scala there is a rather arbitrary distinction between functions defined as _methods_, which are
+  Note that we're simply referencing the `append` function, without writing something like `(x, y) => append(x, y)`
+  or `append(_, _)`. In Scala there is a rather arbitrary distinction between functions defined as _methods_, which are
   introduced with the `def` keyword, and function values, which are the first-class objects we can pass to other
   functions, put in collections, and so on. This is a case where Scala lets us pretend the distinction doesn't exist.
   In other cases, you'll be forced to write `append _` (to convert a `def` to a function value)
-  or even `(x: List[A], y: List[A]) => append(x,y)` if the function is polymorphic and the type arguments aren't known.
+  or even `(x: List[A], y: List[A]) => append(x, y)` if the function is polymorphic and the type arguments aren't known.
   */
   def concat[A](l: List[List[A]]): List[A] =
     foldRight(l, Nil: List[A])(append)
@@ -209,13 +209,13 @@ object List { // `List` companion object. Contains functions for creating and wo
   implementation of `List`, `map` will just be implemented using local mutation (variation 2). Again, note that the
   mutation isn't observable outside the function, since we're only mutating a buffer that we've allocated.
   */
-  def map[A,B](l: List[A])(f: A => B): List[B] =
+  def map[A, B](l: List[A])(f: A => B): List[B] =
     foldRight(l, Nil: List[B])((h, t) => Cons(f(h), t))
 
-  def map_1[A,B](l: List[A])(f: A => B): List[B] =
+  def map_1[A, B](l: List[A])(f: A => B): List[B] =
     foldRightViaFoldLeft(l, Nil: List[B])((h, t) => Cons(f(h), t))
 
-  def map_2[A,B](l: List[A])(f: A => B): List[B] =
+  def map_2[A, B](l: List[A])(f: A => B): List[B] =
     val buf = collection.mutable.ListBuffer[B]()
     def go(l: List[A]): Unit = l match
       case Nil        => ()
@@ -236,7 +236,7 @@ object List { // `List` companion object. Contains functions for creating and wo
   def filter_2[A](l: List[A])(f: A => Boolean): List[A] =
     val buf = collection.mutable.ListBuffer[A]()
     def go(l: List[A]): Unit = l match
-      case Nil => ()
+      case Nil        => ()
       case Cons(h, t) => if (f(h)) buf += h; go(t)
 
     go(l)
@@ -245,7 +245,7 @@ object List { // `List` companion object. Contains functions for creating and wo
   /*
   This could also be implemented directly using `foldRight`.
   */
-  def flatMap[A,B](l: List[A])(f: A => List[B]): List[B] =
+  def flatMap[A, B](l: List[A])(f: A => List[B]): List[B] =
     concat(map(l)(f))
 
   def filterViaFlatMap[A](l: List[A])(f: A => Boolean): List[A] =
@@ -260,7 +260,7 @@ object List { // `List` companion object. Contains functions for creating and wo
 
   The discussion about stack usage from the explanation of `map` also applies here.
   */
-  def addPairwise(a: List[Int], b: List[Int]): List[Int] = (a,b) match
+  def addPairwise(a: List[Int], b: List[Int]): List[Int] = (a, b) match
     case (Nil,          _           ) => Nil
     case (_,            Nil         ) => Nil
     case (Cons(h1, t1), Cons(h2, t2)) => Cons(h1 + h2, addPairwise(t1, t2))
@@ -269,7 +269,7 @@ object List { // `List` companion object. Contains functions for creating and wo
   This function is usually called `zipWith`. The discussion about stack usage from the explanation of `map` also
   applies here. By putting the `f` in the second argument list, Scala can infer its type from the previous argument list.
   */
-  def zipWith[A,B,C](a: List[A], b: List[B])(f: (A,B) => C): List[C] = (a,b) match
+  def zipWith[A, B, C](a: List[A], b: List[B])(f: (A, B) => C): List[C] = (a, b) match
     case (Nil,          _           ) => Nil
     case (_,            Nil         ) => Nil
     case (Cons(h1, t1), Cons(h2, t2)) => Cons(f(h1, h2), zipWith(t1, t2)(f))

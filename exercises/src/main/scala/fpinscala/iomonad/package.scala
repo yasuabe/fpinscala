@@ -26,7 +26,7 @@ def async[A](cb: ((A => Unit) => Unit)): IO[A] =
 
 type Free[F[?], A] = IO3.Free[F, A]
 
-def Return[A](a: A): IO[A] = FreeReturn[Par,A](a)
+def Return[A](a: A): IO[A] = FreeReturn[Par, A](a)
 
 // To run an `IO`, we need an executor service.
 // The name we have chosen for this method, `unsafePerformIO`,

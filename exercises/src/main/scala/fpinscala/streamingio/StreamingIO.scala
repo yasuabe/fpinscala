@@ -228,7 +228,7 @@ object SimpleStreamTransducers {
     }
 
     // enable monadic syntax for `Process` type
-    given [I, O] as Conversion[Process[I, O], Monadic[[X] =>> Process[I, X], O]] = monad[I].toMonadic(_)
+    given [I, O] as Conversion[Process[I, O], Monadic[[X] =>> Process[I, X], O]] = monad[I].toMonadic
 
     /**
      * A helper function to await an element or fall back to another process

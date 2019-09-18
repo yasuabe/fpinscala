@@ -152,7 +152,7 @@ object Prop {
   def forAllPar3[A](g: Gen[A])(f: A => Par[Boolean]): Prop =
     forAll(S ** g) { case s ** a => f(a)(s).get }
 
-  val pint = Gen.choose(0, 10) map (Par.unit(_))
+  val pint = Gen.choose(0, 10) map (Par.unit)
   val p4 =
     forAllPar(pint)(n => equal(Par.map(n)(y => y), n))
 
@@ -192,7 +192,7 @@ case class Gen[+A](sample: State[RNG, A], exhaustive: Stream[Option[A]]) {
 
   /* A version of `listOfN` that generates the size to use dynamically. */
   def listOfN(size: Gen[Int]): Gen[List[A]] =
-    size flatMap (this.listOfN(_))
+    size flatMap (this.listOfN)
 
   def listOf: SGen[List[A]] = Gen.listOf(this)
   def listOf1: SGen[List[A]] = Gen.listOf1(this)

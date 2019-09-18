@@ -140,7 +140,7 @@ object Prop {
   def forAllPar3[A](g: Gen[A])(f: A => Par[Boolean]): Prop =
     forAll(S ** g) { case s ** a => f(a)(s).get }
 
-  val pint = Gen.choose(0, 10) map (Par.unit(_))
+  val pint = Gen.choose(0, 10) map (Par.unit)
   val p4 =
     forAllPar(pint)(n => equal(Par.map(n)(y => y), n))
 
@@ -272,7 +272,7 @@ object Gen {
       Par.fork { Par.map2(p, Par.unit(i))(_ + _) }))
 
   def genStringIntFn(g: Gen[Int]): Gen[String => Int] =
-    g map (i => (s => i))
+    g map (i => s => i)
 }
 
 case class SGen[+A](g: Int => Gen[A]) {

@@ -187,7 +187,7 @@ object Gen {
   def listOfN[A](n: Int, g: Gen[A]): Gen[List[A]] =
     Gen(State.sequence(List.fill(n)(g.sample)))
 
-  val uniform: Gen[Double] = Gen(State((r: RNG) => RNG.double given r))
+  val uniform: Gen[Double] = Gen(State(RNG.double given _))
 
   def choose(i: Double, j: Double): Gen[Double] =
     Gen(State((r: RNG) => RNG.double given r).map(i + _ * (j - i)))
@@ -197,16 +197,16 @@ object Gen {
    * integer in the range.
    */
   def even(start: Int, stopExclusive: Int): Gen[Int] =
-    choose(start, if stopExclusive%2 == 0 then stopExclusive - 1 else stopExclusive)
-      .map (n => if n%2 != 0 then n + 1 else n)
+    choose(start, if stopExclusive % 2 == 0 then stopExclusive - 1 else stopExclusive)
+      .map (n => if n % 2 != 0 then n + 1 else n)
 
   def odd(start: Int, stopExclusive: Int): Gen[Int] =
-    choose(start, if stopExclusive%2 != 0 then stopExclusive - 1 else stopExclusive)
-      .map (n => if n%2 == 0 then n + 1 else n)
+    choose(start, if stopExclusive % 2 != 0 then stopExclusive - 1 else stopExclusive)
+      .map (n => if n % 2 == 0 then n + 1 else n)
 
   def sameParity(from: Int, to: Int): Gen[(Int, Int)] = for
     i <- choose(from, to)
-    j <- if i%2 == 0 then even(from, to) else odd(from, to)
+    j <- if i % 2 == 0 then even(from, to) else odd(from, to)
   yield (i, j)
 
   def listOfN_1[A](n: Int, g: Gen[A]): Gen[List[A]] =

@@ -172,7 +172,7 @@ A finite domain is exhausted when the stream reaches empty.
 */
 case class Gen[+A](sample: State[RNG, A], exhaustive: Stream[Option[A]]) {
   def map[B](f: A => B): Gen[B] =
-    Gen(sample.map(f), exhaustive.map(_.map(f)))
+    Gen(sample.map(f), exhaustive.map(_ map f))
 
   def map2[B, C](g: Gen[B])(f: (A, B) => C): Gen[C] =
     Gen(sample.map2(g.sample)(f),
@@ -232,7 +232,7 @@ object Gen {
    *    Stream(Stream(1, 3, 4), Stream(1, 3, 5), Stream(2, 3, 4), Stream(2, 3, 5))
   */
   def cartesian[A](s: Stream[Stream[A]]): Stream[Stream[A]] =
-    s.foldRight(Stream(Stream[A]()))((hs, ts) => map2Stream(hs, ts)(Stream.cons(_, _)))
+    s.foldRight(Stream(Stream[A]()))(map2Stream(_, _)(Stream.cons(_, _)))
 
   /* `map2Option` and `map2Stream`. Notice the duplication! */
   def map2Option[A, B, C](oa: Option[A], ob: Option[B])(f: (A, B) => C): Option[C] =
@@ -258,7 +258,7 @@ object Gen {
    * `Stream(None)` in our current representation of `exhaustive`.
    */
   def uniform: Gen[Double] =
-    Gen(State(r => RNG.double given r), unbounded)
+    Gen(State(RNG.double given _), unbounded)
 
   def choose(i: Double, j: Double): Gen[Double] =
     Gen(State((r: RNG) => RNG.double given r).map(i + _ * (j - i)), unbounded)
@@ -268,16 +268,16 @@ object Gen {
    * integer in the range.
    */
   def even(start: Int, stopExclusive: Int): Gen[Int] =
-    choose(start, if (stopExclusive%2 == 0) stopExclusive - 1 else stopExclusive)
-      .map (n => if (n%2 != 0) n + 1 else n)
+    choose(start, if (stopExclusive % 2 == 0) stopExclusive - 1 else stopExclusive)
+      .map (n => if n % 2 != 0 then n + 1 else n)
 
   def odd(start: Int, stopExclusive: Int): Gen[Int] =
-    choose(start, if (stopExclusive%2 != 0) stopExclusive - 1 else stopExclusive)
-      .map (n => if (n%2 == 0) n + 1 else n)
+    choose(start, if (stopExclusive % 2 != 0) stopExclusive - 1 else stopExclusive)
+      .map (n => if n % 2 == 0 then n + 1 else n)
 
   def sameParity(from: Int, to: Int): Gen[(Int, Int)] = for
     i <- choose(from, to)
-    j <- if (i%2 == 0) even(from, to) else odd(from, to)
+    j <- if i % 2 == 0 then even(from, to) else odd(from, to)
   yield (i, j)
 
   def listOfN_1[A](n: Int, g: Gen[A]): Gen[List[A]] =
@@ -326,19 +326,19 @@ object Gen {
    * When either stream is exhausted, insert all remaining elements from the other stream.
    */
   def interleave[A](b: Stream[Boolean], s1: Stream[A], s2: Stream[A]): Stream[A] =
-    b.headOption map { hd =>
-      if (hd) s1 match
+    b.headOption map {
+      if (_) s1 match
         case Cons(h, t) => Stream.cons(h(), interleave(b drop 1, t(), s2))
-        case _ => s2
+        case _          => s2
 
       else s2 match
         case Cons(h, t) => Stream.cons(h(), interleave(b drop 1, s1, t()))
-        case _ => s1
+        case _          => s1
 
     } getOrElse Stream.empty
 
   def listOf[A](g: Gen[A]): SGen[List[A]] =
-    Sized(n => g.listOfN(n))
+    Sized(g.listOfN)
 
   /* Not the most efficient implementation, but it's simple.
    * This generates ASCII strings.
@@ -386,7 +386,7 @@ object Gen {
       Par.fork { Par.map2(p, Par.unit(i))(_ + _) }))
 
   def genStringIntFn(g: Gen[Int]): Gen[String => Int] =
-    g map (i => (s => i))
+    g map (i => s => i)
 }
 
 trait SGen[+A] {
